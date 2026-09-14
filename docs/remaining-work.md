@@ -14,6 +14,9 @@
 - Optimization Flight Recorder recording, SHA-256 integrity, replay,
   independent re-verification, API download and dashboard timeline.
 - Checksum-pinned Netlib/MIPLIB manifests and an isolated reference adapter.
+- Small convex QP and LP interior-point solves with primal/KKT verification.
+- Mathematical demonstrators for crude blending, process optimization,
+  production planning and supply chains.
 
 ## B. Partially complete
 
@@ -26,13 +29,16 @@
 - Cuts and heuristics are intentionally basic.
 - Adaptive execution selects CPU/CUDA for a non-authoritative numerical workload,
   not the authoritative simplex or MILP algorithms.
-- Industrial generators cover refinery, power and logistics.
+- Industrial generators cover all named domains, but use deterministic synthetic
+  data and do not establish industrial-scale performance.
 
 ## C. Missing
 
 - Dual simplex and a real algorithm-selecting `auto` method.
-- QP, authoritative multicore LP/MILP, sparse LU update schemes, strong branching,
+- Authoritative multicore LP/MILP, sparse LU update schemes, strong branching,
   Gomory/MIR/cover cuts, feasibility pump and tree restart/persistence.
+- Sparse large-scale QP KKT factorization, QP file import, infeasibility and
+  unboundedness certificates, and Flight Recorder QP schemas.
 - Crude blending, production-planning and supply-chain demonstrations.
 - Mittelmann manifest and measured benchmark run.
 

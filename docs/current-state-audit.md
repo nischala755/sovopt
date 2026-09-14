@@ -17,7 +17,7 @@ code exists but this host cannot validate it.
 | MPS parser | Strict free/fixed MPS reader with resource limits | `src/mps.cpp` | Implemented | Quadratic MPS sections are unsupported |
 | LP | Two-phase primal revised simplex with Harris ratio selection, refinement and original-space verification | `src/lp.cpp`, `src/lp_standard.cpp` | Partial | Dual simplex and sparse update schemes are absent |
 | MILP | Deterministic best-bound branch-and-bound over verified LP relaxations | `src/mip.cpp` | Partial | Single-threaded; limited cuts and primal heuristic |
-| QP | No QP model or algorithm | — | Missing | Entire capability |
+| QP | Convex quadratic model and infeasible-start primal-dual predictor-corrector method | `include/sovereign/qp.hpp`, `src/qp.cpp` | Implemented for small convex QPs | Dense Newton/KKT system limits scale; QP MPS extensions and recorder schema absent |
 | Presolve | Fixed substitution, constant rows, singleton tightening, reconstruction | `src/presolve.cpp` | Partial | Duplicate rows, general implied bounds, aggregation and richer postsolve are absent |
 | Scaling | Row/column scaling in LP standard-form conversion | `src/lp_standard.cpp` | Partial | No iterative equilibration report or condition metrics |
 | Numerical tolerances | Explicit primal, dual, integrality and pivot tolerances | `include/sovereign/solution.hpp` | Implemented | No method-specific stability policy |
@@ -45,7 +45,7 @@ code exists but this host cannot validate it.
 | MIPLIB | Checksum-pinned flugpl manifest and measured failed run | `benchmarks/manifests/miplib-small.json` | Partial | Solver reaches iteration limit |
 | Reference solver harness | Isolated exact-command adapter | `benchmarks/baselines/run_reference.py` | Partial | No reference executable installed on this host |
 | Result serialization | CLI JSON plus first-order benchmark JSON/CSV | `src/cli.cpp`, `src/benchmark.cpp` | Partial | No versioned complete solve artifact |
-| Industrial models | Seeded refinery, power and logistics generators | `src/generators.cpp` | Partial | Crude blending, production, transportation and supply-chain coverage is absent |
+| Industrial models | Seeded refinery, crude blending, process, production, power, logistics and supply-chain generators | `src/generators.cpp` | Implemented as demonstrators | Industrial data sets and industrial-scale performance validation remain absent |
 | Optimization Flight Recorder | Versioned solve artifacts, SHA-256, replay, reverify, REST download and UI timeline | `src/recorder.cpp`, `service/app.py`, `web/src/components.tsx` | Implemented | SHA-256 integrity is not a digital signature |
 
 ## Existing public interfaces to preserve

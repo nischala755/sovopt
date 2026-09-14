@@ -68,4 +68,32 @@ Model generate_logistics_model(std::uint64_t seed, Index locations) {
     m.matrix = CscMatrix::from_triplets(m.constraints.size(), m.variables.size(), std::move(entries));
     return m;
 }
+
+Model generate_crude_blending_model(std::uint64_t seed, Index crudes) {
+    positive(crudes,"crudes"); std::mt19937_64 rng(seed); Model m; m.name="seeded_crude_blending_"+std::to_string(seed);
+    m.constraints={{"demand",100,100},{"sulfur_limit",-infinity,160}}; std::vector<Triplet> e;
+    for(Index j=0;j<crudes;++j){m.variables.push_back({"crude_"+std::to_string(j),0,100});m.objective.push_back(draw(rng,35,65));e.push_back({0,j,1});e.push_back({1,j,draw(rng,.4,1.5)});}
+    m.matrix=CscMatrix::from_triplets(2,crudes,std::move(e)); return m;
+}
+
+Model generate_production_planning_model(std::uint64_t seed,Index products,Index periods) {
+    positive(products,"products");positive(periods,"periods");std::mt19937_64 rng(seed);Model m;m.name="seeded_production_planning_"+std::to_string(seed);std::vector<Triplet>e;
+    for(Index p=0;p<products;++p)m.constraints.push_back({"demand_"+std::to_string(p),double(periods),infinity});
+    for(Index t=0;t<periods;++t)m.constraints.push_back({"capacity_"+std::to_string(t),-infinity,double(products)*3});
+    for(Index p=0;p<products;++p)for(Index t=0;t<periods;++t){Index j=m.variables.size();m.variables.push_back({"make_"+std::to_string(p)+"_"+std::to_string(t),0,5,VariableType::integer});m.objective.push_back(draw(rng,4,15));e.push_back({p,j,1});e.push_back({products+t,j,1});}
+    m.matrix=CscMatrix::from_triplets(m.constraints.size(),m.variables.size(),std::move(e));return m;
+}
+
+Model generate_supply_chain_model(std::uint64_t seed,Index plants,Index customers) {
+    positive(plants,"plants");positive(customers,"customers");std::mt19937_64 rng(seed);Model m;m.name="seeded_supply_chain_"+std::to_string(seed);std::vector<Triplet>e;
+    const double demand=10;for(Index p=0;p<plants;++p)m.constraints.push_back({"plant_"+std::to_string(p),-infinity,demand*customers/plants*1.25});for(Index c=0;c<customers;++c)m.constraints.push_back({"customer_"+std::to_string(c),demand,infinity});
+    for(Index p=0;p<plants;++p)for(Index c=0;c<customers;++c){Index j=m.variables.size();m.variables.push_back({"ship_"+std::to_string(p)+"_"+std::to_string(c),0,infinity});m.objective.push_back(draw(rng,1,12));e.push_back({p,j,1});e.push_back({plants+c,j,1});}
+    m.matrix=CscMatrix::from_triplets(m.constraints.size(),m.variables.size(),std::move(e));return m;
+}
+
+Model generate_process_model(std::uint64_t seed,Index stages) {
+    positive(stages,"stages");std::mt19937_64 rng(seed);Model m;m.name="seeded_process_"+std::to_string(seed);m.sense=ObjectiveSense::maximize;std::vector<Triplet>e;
+    for(Index j=0;j<stages;++j){m.variables.push_back({"flow_"+std::to_string(j),0,100});m.objective.push_back(j+1==stages?draw(rng,20,30):-draw(rng,1,3));if(j){Index i=m.constraints.size();const double yield=draw(rng,.82,.97);m.constraints.push_back({"balance_"+std::to_string(j),0,0});e.push_back({i,j-1,yield});e.push_back({i,j,-1});}}
+    m.constraints.push_back({"feed_capacity",-infinity,100});e.push_back({m.constraints.size()-1,0,1});m.matrix=CscMatrix::from_triplets(m.constraints.size(),m.variables.size(),std::move(e));return m;
+}
 }

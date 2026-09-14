@@ -3,6 +3,7 @@
 #include <sovereign/errors.hpp>
 #include <sovereign/validation.hpp>
 #include <sovereign/lp.hpp>
+#include <sovereign/qp.hpp>
 #include <sovereign/mip.hpp>
 #include <sovereign/recorder.hpp>
 #include <iomanip>
@@ -21,7 +22,7 @@ constexpr std::string_view usage =
     "AstraNiti Sovereign Optimizer 0.1.0\n"
     "Usage: sovereign inspect|validate|solve MODEL.mps [--json] [--config FILE]\n"
     "       [--mps-format free|fixed]\n"
-    "       solve options: [--method auto|simplex] [--branching most_fractional|pseudocost]\n"
+    "       solve options: [--method auto|simplex|interior_point] [--branching most_fractional|pseudocost]\n"
     "       [--time-limit SEC] [--node-limit N] [--iteration-limit N] [--mip-gap GAP]\n"
     "       [--record RUN.astra]\n"
     "       sovereign replay RUN.astra [--reverify]\n"
@@ -108,7 +109,7 @@ int run_cli(std::span<const std::string_view> args, std::ostream& output, std::o
                 else if (args[i] == "free") format = MpsFormat::free;
                 else if (args[i] == "fixed") format = MpsFormat::fixed;
                 else if(option=="--mps-format") throw ConfigurationError("MPS format must be free or fixed");
-                else if(option=="--method") { if(args[i]!="auto"&&args[i]!="simplex") throw ConfigurationError("method must be auto or simplex"); method=std::string(args[i]); }
+                else if(option=="--method") { if(args[i]!="auto"&&args[i]!="simplex"&&args[i]!="interior_point") throw ConfigurationError("method must be auto, simplex or interior_point"); method=std::string(args[i]); }
                 else if(option=="--branching") branching=std::string(args[i]);
                 else if(option=="--time-limit"||option=="--mip-gap") {
                     char* end=nullptr; const std::string value(args[i]); const double parsed=std::strtod(value.c_str(),&end);
@@ -123,6 +124,7 @@ int run_cli(std::span<const std::string_view> args, std::ostream& output, std::o
         }
         auto config = config_path ? read_config_file(*config_path) : Configuration{};
         if (format) config.mps.format = *format;
+        if(method) config.solver.method=*method;
         if(branching) config.solver.branching=*branching;
         if(time_limit) config.solver.time_limit_seconds=*time_limit; if(gap) config.solver.mip_gap=*gap;
         if(node_limit) config.solver.node_limit=*node_limit; if(iteration_limit) config.solver.iteration_limit=*iteration_limit;
@@ -138,7 +140,15 @@ int run_cli(std::span<const std::string_view> args, std::ostream& output, std::o
             const auto existing=config.solver.telemetry;
             config.solver.telemetry=[&](const TelemetryEvent& event){events.push_back(event);if(existing)existing(event);};
             const bool integer=std::any_of(model.variables.begin(),model.variables.end(),[](const auto& v){return v.type!=VariableType::continuous;});
-            const auto solved=integer ? solve_mip(model,config.solver) : solve_lp(model,config.solver);
+            SolveResult solved;
+            if(integer) solved=solve_mip(model,config.solver);
+            else if(config.solver.method=="interior_point") {
+                const auto ip=solve_interior_point(model,config.solver); solved.status=ip.status; solved.message=ip.message;
+                solved.primal=ip.primal; solved.objective=ip.objective; solved.iterations=ip.iterations; solved.runtime_seconds=ip.runtime_seconds;
+                solved.verification.passed=ip.verification.passed; solved.verification.objective=ip.verification.objective;
+                solved.verification.primal_residual=ip.verification.primal_residual; solved.verification.dual_residual=ip.verification.stationarity_residual;
+            } else solved=solve_lp(model,config.solver);
+            if(record_path&&config.solver.method=="interior_point") throw ConfigurationError("Flight Recorder for interior-point results requires QP certificate schema support");
             if(record_path) record_solve(*record_path,std::filesystem::path(path),model,config.solver,solved,events);
             print_solution(result,model,solved,json);
             output<<result.str();

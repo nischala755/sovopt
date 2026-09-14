@@ -1,17 +1,18 @@
-# AstraNiti — Sovereign Optimizer
+# AstraNiti â€” Sovereign Optimizer
 
 > **Astra** for a precision instrument; **Niti** for disciplined strategy.
 > A from-scratch optimization laboratory built for transparent, sovereign computation.
 
 [![C++20](https://img.shields.io/badge/C%2B%2B-20-00599C)](https://isocpp.org/)
-[![Tests](https://img.shields.io/badge/native%20tests-93%20passing-2ea44f)](#verification)
+[![Tests](https://img.shields.io/badge/native%20tests-107%20passing-2ea44f)](#verification)
 [![Python](https://img.shields.io/badge/Python%20tests-7%20passing-2ea44f)](#verification)
 [![Solver](https://img.shields.io/badge/external%20solver-none-ffb84d)](#trust-boundary)
 [![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https%3A%2F%2Fgithub.com%2Fnischala755%2Fsovopt)
 
 An independent C++20 mathematical optimization engine with sparse model import,
-presolve, two-phase revised simplex, independently checked numerical certificates,
-and deterministic MILP branch-and-bound. It does not wrap an existing solver.
+presolve, two-phase revised simplex, a convex-QP primal-dual interior-point method,
+independently checked numerical results, and deterministic MILP branch-and-bound.
+It does not wrap an existing solver.
 
 <details>
 <summary><strong>Why this matters for the hackathon</strong></summary>
@@ -39,6 +40,7 @@ flowchart LR
 | Goal | Evidence | Status |
 |---|---|---|
 | Robust LP/MILP engine | Revised simplex, branch-and-bound, certificates and regression tests | Implemented |
+| Convex QP and interior point | Infeasible-start predictor-corrector method with independent primal/KKT residual checks | Implemented for small convex models |
 | CLI and application API | Native CLI, pybind11 and asynchronous FastAPI jobs | Implemented |
 | Engineering dashboard | Model inspection, telemetry, verification and experiment views | Implemented |
 | Recognised benchmarks | Netlib AFIRO, SC50A and SC50B match published optima and pass independent verification | Demonstrated |
@@ -50,6 +52,17 @@ flowchart LR
 
 The status table is intentionally evidence-based. See
 [benchmark evidence](docs/benchmark_results.md) before making performance claims.
+
+The continuous LP interior-point path is available explicitly:
+
+```sh
+sovereign solve model.mps --method interior_point
+```
+
+The C++ `QuadraticModel` API accepts a symmetric positive-semidefinite sparse
+Hessian and returns a result only after primal and KKT residual verification.
+Its Newton system is presently assembled densely, so this capability is a
+correctness foundation for small convex QPs rather than a large-scale claim.
 
 ## Build and test on Windows
 

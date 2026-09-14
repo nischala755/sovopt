@@ -21,5 +21,6 @@ void validate_options(const SolverOptions& o) {
     if(!std::isfinite(o.time_limit_seconds)||o.time_limit_seconds<0) throw std::invalid_argument("Invalid time limit");
     if(!std::isfinite(o.mip_gap)||o.mip_gap<0) throw std::invalid_argument("Invalid MIP gap");
     if(o.branching!="most_fractional"&&o.branching!="pseudocost") throw std::invalid_argument("Unsupported branching strategy");
+    if(o.method!="auto"&&o.method!="simplex"&&o.method!="interior_point") throw std::invalid_argument("Unsupported continuous solver method");
 }
 }

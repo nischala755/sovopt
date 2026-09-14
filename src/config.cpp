@@ -38,6 +38,9 @@ Configuration read_config(std::istream& input) {
             if (value == "free") result.mps.format = MpsFormat::free;
             else if (value == "fixed") result.mps.format = MpsFormat::fixed;
             else fail("mps_format must be free or fixed");
+        } else if (key == "method") {
+            if(value!="auto"&&value!="simplex"&&value!="interior_point") fail("unsupported solver method");
+            result.solver.method=value;
         } else if (key == "branching") {
             if(value!="most_fractional"&&value!="pseudocost") fail("unsupported branching strategy");
             result.solver.branching=value;

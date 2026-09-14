@@ -25,6 +25,11 @@ TEST_CASE("CLI solve returns a verified mathematical result", "[cli]") {
     REQUIRE(r.code==0); REQUIRE(r.out.find("\"status\":\"optimal\"")!=std::string::npos);
     REQUIRE(r.out.find("\"objective\":9")!=std::string::npos); REQUIRE(r.out.find("\"verified\":true")!=std::string::npos);
 }
+TEST_CASE("CLI exposes the verified interior point LP method", "[cli][qp]") {
+    const auto r=run({"solve",lp,"--json","--method","interior_point"}); INFO(r.err);
+    REQUIRE(r.code==0); REQUIRE(r.out.find("\"status\":\"optimal\"")!=std::string::npos);
+    REQUIRE(r.out.find("\"verified\":true")!=std::string::npos);
+}
 TEST_CASE("CLI inspects example with hand-counted statistics and validates without solving", "[cli]") {
     const auto r = run({"inspect",lp,"--json"});
     REQUIRE(r.code == 0);
