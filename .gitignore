@@ -3,6 +3,7 @@
 /.venv/
 /.env
 /.sovereign-data/
+/benchmark-results/
 /CMakeUserPresets.json
 /web/node_modules/
 /web/dist/

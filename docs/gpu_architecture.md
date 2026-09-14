@@ -34,3 +34,25 @@ when a CUDA compiler is found, call `enable_language(CUDA)`, add
 separable compilation if required by the selected toolchain. Hardware results
 must identify the device, driver, toolkit, and exact build; this CPU-only
 environment cannot test or support GPU performance claims.
+
+## NVIDIA validation pack
+
+On a Windows NVIDIA machine with a CUDA toolkit, driver, and Visual Studio C++
+toolchain installed, run from PowerShell:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/cuda-validate.ps1
+```
+
+The script enables CUDA in a separate `build/cuda` tree, builds every target,
+runs the full CTest suite, checks CUDA CSC products against the independent CPU
+implementation, and runs static CPU, static GPU, and measured adaptive trials.
+It writes device, driver, CUDA compiler, host, Git revision, kernel time,
+transfer time, wall time, residuals, and raw repetition data under
+`benchmark-results/cuda`. A numerical mismatch or kernel failure fails the run.
+
+Use `-CudaArchitectures 86` (or the appropriate architecture) if `native` is
+not supported by the installed CMake/CUDA combination. `-Scale` controls the
+square three-band sparse probe size and defaults to 100,000 variables and about
+300,000 nonzeros. This is an execution-kernel experiment; it does not claim an
+authoritative LP optimum.

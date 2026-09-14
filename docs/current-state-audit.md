@@ -31,7 +31,7 @@ code exists but this host cannot validate it.
 | MIP gap | Normalized bound/incumbent gap and termination | `src/mip.cpp` | Implemented | Depends on single-threaded tree processing |
 | Parallelism | CPU capability reports hardware concurrency | `src/backend.cpp` | Missing | Authoritative LP/MILP algorithms are single-threaded |
 | CPU backend | CSC products and experimental primal-dual workload | `src/backend.cpp` | Implemented | First-order result is deliberately non-authoritative |
-| CUDA backend | Optional real CSC kernels, device probing and timing | `src/cuda_backend.cu` | Blocked | No CUDA compiler/device is available on this host |
+| CUDA backend | Optional real CSC kernels, device probing, CPU cross-checks, benchmark probe and evidence script | `src/cuda_backend.cu`, `tools/cuda_probe.cpp`, `scripts/cuda-validate.ps1` | Prepared; measurement blocked | No CUDA compiler/device is available on this host |
 | Adaptive execution | Measurement-based CPU/CUDA selection for experimental workload | `src/benchmark.cpp` | Partial | Does not select authoritative simplex/MILP execution strategies |
 | Model fingerprint | Stable endian-independent hash and structural metrics | `src/fingerprint.cpp` | Implemented | Existing hash is 64-bit, not cryptographic |
 | Strategy engine | Backend selection based on measured compute and transfer cost | `src/benchmark.cpp` | Partial | No LP algorithm selector |

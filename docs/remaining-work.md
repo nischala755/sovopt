@@ -53,5 +53,7 @@
 ## E. Blocked by hardware or environment
 
 - CUDA toolkit, driver and device measurements: this host exposes Intel UHD only.
+  `scripts/cuda-validate.ps1` is ready to build, cross-check, benchmark and export
+  evidence on the target NVIDIA laptop.
 - Reference comparison: no supported reference executable is installed.
 - Mistral live explanation: the configured account returned HTTP 429.

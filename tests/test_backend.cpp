@@ -1,4 +1,5 @@
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/catch_approx.hpp>
 #include <sovereign/backend.hpp>
 
 using namespace sovereign;
@@ -57,3 +58,17 @@ TEST_CASE("Unavailable CUDA dispatch is truthful and falls back only when reques
     REQUIRE_FALSE(fallback.authoritative);
 #endif
 }
+
+#ifdef SOVEREIGN_ENABLE_CUDA
+TEST_CASE("CUDA sparse products agree with the independent CPU implementation", "[backend][cuda]") {
+    const auto info=backend(BackendKind::cuda).capabilities();
+    if(!info.available){SUCCEED("CUDA was compiled but no runtime device is available");return;}
+    const auto matrix=CscMatrix::from_triplets(3,4,{{0,0,2},{2,0,-1},{1,1,3},{0,3,.5},{2,3,4}});
+    const std::vector<double>x={1,-2,7,.25},y={.5,-1,2};
+    const auto cpu_ax=backend(BackendKind::cpu).multiply(matrix,x),gpu_ax=backend(BackendKind::cuda).multiply(matrix,x);
+    const auto cpu_at=backend(BackendKind::cpu).transpose_multiply(matrix,y),gpu_at=backend(BackendKind::cuda).transpose_multiply(matrix,y);
+    REQUIRE(cpu_ax.size()==gpu_ax.size());REQUIRE(cpu_at.size()==gpu_at.size());
+    for(Index i=0;i<cpu_ax.size();++i)REQUIRE(gpu_ax[i]==Catch::Approx(cpu_ax[i]).margin(1e-12));
+    for(Index i=0;i<cpu_at.size();++i)REQUIRE(gpu_at[i]==Catch::Approx(cpu_at[i]).margin(1e-12));
+}
+#endif

@@ -64,6 +64,16 @@ Hessian and returns a result only after primal and KKT residual verification.
 Its Newton system is presently assembled densely, so this capability is a
 correctness foundation for small convex QPs rather than a large-scale claim.
 
+To validate CUDA on an NVIDIA Windows machine and retain reproducible evidence:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/cuda-validate.ps1
+```
+
+The validation pack performs CPU/GPU numerical cross-checks and records static
+CPU, static GPU, and adaptive measurements. See
+[GPU architecture and validation](docs/gpu_architecture.md).
+
 ## Build and test on Windows
 
 From the repository root, with Visual Studio C++ desktop Build Tools and its

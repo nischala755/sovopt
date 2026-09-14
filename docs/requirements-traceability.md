@@ -11,7 +11,7 @@ Evidence date: 2026-09-14. Status reflects executable behavior, not class names.
 | Solver core | Numerical stability | PARTIALLY IMPLEMENTED | Scaling, Harris ratio, refinement and conservative certificates; industrial scale unproved |
 | Solver core | Scalability | PARTIALLY IMPLEMENTED | Sparse storage; broad large-scale evidence absent |
 | Solver core | Multi-core | NOT IMPLEMENTED | Authoritative LP/MILP paths are single-threaded |
-| Solver core | GPU | BLOCKED | CUDA kernels exist; no CUDA toolkit/device on this host |
+| Solver core | GPU | BLOCKED | CUDA kernels, CPU cross-check tests, probe executable and reproducible validation pack exist; actual NVIDIA measurement requires the target laptop |
 | Algorithms | Revised simplex | IMPLEMENTED | Phase I/II, basis, pricing, ratio, pivot and verification |
 | Algorithms | Interior-point method | PARTIALLY IMPLEMENTED | Genuine infeasible-start primal-dual LP/QP path with residual verification; sparse KKT factorization and certificates remain |
 | Algorithms | First-order method | PARTIALLY IMPLEMENTED | Experimental non-authoritative CPU/CUDA workload |
