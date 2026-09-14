@@ -38,7 +38,8 @@
 - Authoritative multicore LP/MILP, sparse LU update schemes, strong branching,
   Gomory/MIR/cover cuts, feasibility pump and tree restart/persistence.
 - Sparse large-scale QP KKT factorization, QP file import, infeasibility and
-  unboundedness certificates, and Flight Recorder QP schemas.
+  unboundedness certificates, and Flight Recorder QP schemas. Optimal QP KKT
+  certificates now use original-model row and variable coordinates.
 - Crude blending, production-planning and supply-chain demonstrations.
 - Mittelmann manifest and measured benchmark run.
 

@@ -60,7 +60,8 @@ sovereign solve model.mps --method interior_point
 ```
 
 The C++ `QuadraticModel` API accepts a symmetric positive-semidefinite sparse
-Hessian and returns a result only after primal and KKT residual verification.
+Hessian and returns original-coordinate bound multipliers only after independent
+primal, stationarity, complementarity, and objective verification.
 Its Newton system is presently assembled densely, so this capability is a
 correctness foundation for small convex QPs rather than a large-scale claim.
 
