@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from 'react'
-import type { AiProposalData, ServiceStatus, TelemetryPoint } from './api'
+import type { AiProposalData, FlightEvent, ServiceStatus, TelemetryPoint } from './api'
 
 export function ServiceState({service,status,detail}:{service:string;status:ServiceStatus;detail?:string}){
  return <div className={`service service-${status}`} role="status"><span className="signal"/><div><strong>{service}</strong><small>{detail||status}</small></div><b>{status.toUpperCase()}</b></div>
@@ -19,4 +19,8 @@ export function TelemetryChart({points,series}:{points:TelemetryPoint[];series:{
 export function AiProposal({proposal,onLoad}:{proposal:AiProposalData;onLoad:()=>void}){
  const [reviewed,setReviewed]=useState(false),[confirm,setConfirm]=useState(false)
  return <article className="proposal"><div className="proposal-label">AI-PROPOSED · UNVERIFIED</div><h3>{proposal.summary}</h3><pre>{proposal.formulation}</pre>{proposal.warnings.length>0&&<ul>{proposal.warnings.map(w=><li key={w}>{w}</li>)}</ul>}<label className="review"><input type="checkbox" checked={reviewed} onChange={e=>setReviewed(e.target.checked)}/> I have reviewed variables, domains, constraints, and objective</label><button disabled={!reviewed} onClick={()=>setConfirm(true)}>Review and Load Formulation</button>{confirm&&<div className="modal-backdrop"><div role="dialog" aria-modal="true" aria-labelledby="confirm-title" className="modal"><p className="kicker">EXPLICIT CONFIRMATION</p><h2 id="confirm-title">Load AI-proposed formulation?</h2><p>This replaces the current draft. The proposal is non-authoritative and must be independently verified.</p><div className="row"><button className="ghost" onClick={()=>setConfirm(false)}>Cancel</button><button onClick={()=>{onLoad();setConfirm(false)}}>Confirm Load</button></div></div></div>}</article>
+}
+export function FlightTimeline({integrity,events}:{integrity:'pending'|'pass'|'tampered';events:FlightEvent[]}){
+ const label=integrity==='pass'?'INTEGRITY PASS':integrity==='tampered'?'TAMPER DETECTED':'AWAITING RECORDING'
+ return <div className="flight-recorder"><div className={`integrity integrity-${integrity}`}>{label}</div>{events.length?<ol className="timeline">{events.map((event,index)=><li key={`${event.type}-${index}`}><span>{index+1}</span><div><b>{event.type}</b><small>{event.detail||'Recorded solver event'}</small></div></li>)}</ol>:<EmptyState title="No recorded events" detail="Create or replay a Flight Recorder bundle to inspect its solve timeline."/>}</div>
 }

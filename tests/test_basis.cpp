@@ -56,3 +56,24 @@ TEST_CASE("Sparse basis rejects invalid input and numerical breakdown", "[basis]
     REQUIRE_THROWS_AS(SparseBasis(tiny,std::vector<Index>{0}), NumericalError);
     REQUIRE(SparseBasis(tiny,std::vector<Index>{0},1e-16).solve(std::vector<double>{1e-15})[0] == 1);
 }
+
+TEST_CASE("Sparse basis reports refined forward and transpose residuals", "[basis][numerical]") {
+    const auto matrix = CscMatrix::from_triplets(3, 3,
+        {{0,0,1e-8},{1,0,1},{1,1,1},{2,1,1},{2,2,1e8}});
+    const SparseBasis basis(matrix, std::vector<Index>{0,1,2}, 1e-14);
+    const std::vector<double> expected{1,2,3};
+    const auto rhs = matrix.multiply(expected);
+    const auto forward = basis.solve(rhs);
+    const auto forward_info = basis.last_solve_info();
+    REQUIRE(forward_info.scaled_residual <= 1e-14);
+    REQUIRE(forward_info.refinements <= 3);
+    const auto transpose_rhs = matrix.transpose_multiply(expected);
+    const auto transpose = basis.solve_transpose(transpose_rhs);
+    const auto transpose_info = basis.last_solve_info();
+    REQUIRE(transpose_info.scaled_residual <= 1e-14);
+    REQUIRE(transpose_info.refinements <= 3);
+    for (Index i=0;i<3;++i) {
+        REQUIRE(std::abs(forward[i]-expected[i]) <= 1e-8);
+        REQUIRE(std::abs(transpose[i]-expected[i]) <= 1e-8);
+    }
+}

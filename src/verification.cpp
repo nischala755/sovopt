@@ -85,32 +85,36 @@ struct Domain { double lower,upper; };
 std::vector<Domain> correction_domains(const Model& m) {
     std::vector<Domain> domains;
     for(const auto& v:m.variables) domains.push_back({v.lower,v.upper});
-    std::vector<Index> counts(m.constraints.size(),0), columns(m.constraints.size(),0);
-    std::vector<double> coefficients(m.constraints.size(),0);
+    std::vector<std::vector<std::pair<Index,double>>> rows(m.constraints.size());
     for(Index j=0;j<m.variables.size();++j) {
         const auto col=m.matrix.column(j);
-        for(Index k=0;k<col.rows.size();++k) {
-            const Index i=col.rows[k]; ++counts[i]; columns[i]=j; coefficients[i]=col.values[k];
-        }
+        for(Index k=0;k<col.rows.size();++k) rows[col.rows[k]].push_back({j,col.values[k]});
     }
-    for(Index i=0;i<counts.size();++i) {
-        if(counts[i]!=1) continue;
-        const double coefficient=coefficients[i];
-        auto& domain=domains[columns[i]];
-        // Binary64 division is rounded to nearest. One adjacent representable
-        // value encloses the exact quotient, including overflow and underflow.
-        // These bounds only restrict residual corrections, never multipliers.
-        const double row_lo=m.constraints[i].lower,row_hi=m.constraints[i].upper;
-        if(std::isfinite(row_lo)) {
-            const double q=row_lo/coefficient;
-            if(coefficient>0) domain.lower=std::max(domain.lower,std::nextafter(q,-infinity));
-            else domain.upper=std::min(domain.upper,std::nextafter(q,infinity));
+    // Interval propagation proves correction endpoints from the original rows.
+    // Every arithmetic result moves outward by one ULP; overflow simply yields
+    // no tightening. This affects only conservative residual bounds.
+    for(Index pass=0;pass<std::max<Index>(1,m.variables.size());++pass) {
+        bool changed=false;
+        for(Index i=0;i<rows.size();++i) for(const auto& [target,a]:rows[i]) {
+            double others_min=0,others_max=0;bool finite_min=true,finite_max=true;
+            for(const auto& [j,c]:rows[i]) if(j!=target) {
+                const double lo=c>0?domains[j].lower:domains[j].upper;
+                const double hi=c>0?domains[j].upper:domains[j].lower;
+                if(!std::isfinite(lo)) finite_min=false; else {others_min=std::nextafter(std::fma(c,lo,others_min),-infinity);if(!std::isfinite(others_min))finite_min=false;}
+                if(!std::isfinite(hi)) finite_max=false; else {others_max=std::nextafter(std::fma(c,hi,others_max),infinity);if(!std::isfinite(others_max))finite_max=false;}
+            }
+            auto tighten_lower=[&](double value){value=std::nextafter(value,-infinity);if(std::isfinite(value)&&value>domains[target].lower){domains[target].lower=value;changed=true;}};
+            auto tighten_upper=[&](double value){value=std::nextafter(value,infinity);if(std::isfinite(value)&&value<domains[target].upper){domains[target].upper=value;changed=true;}};
+            if(std::isfinite(m.constraints[i].upper)&&finite_min) {
+                const double q=(m.constraints[i].upper-others_min)/a;
+                if(a>0)tighten_upper(q);else tighten_lower(q);
+            }
+            if(std::isfinite(m.constraints[i].lower)&&finite_max) {
+                const double q=(m.constraints[i].lower-others_max)/a;
+                if(a>0)tighten_lower(q);else tighten_upper(q);
+            }
         }
-        if(std::isfinite(row_hi)) {
-            const double q=row_hi/coefficient;
-            if(coefficient>0) domain.upper=std::min(domain.upper,std::nextafter(q,infinity));
-            else domain.lower=std::max(domain.lower,std::nextafter(q,-infinity));
-        }
+        if(!changed)break;
     }
     return domains;
 }

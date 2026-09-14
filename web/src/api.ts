@@ -4,6 +4,8 @@ export type Job={id:string;status:'queued'|'running'|'completed'|'failed';progre
 export type ModelInfo={id:string;name:string;format?:string;variables?:number;constraints?:number;nonzeros?:number;integer_variables?:number;sense?:string;fingerprint?:string}
 export type BenchmarkResult={backend:'cpu'|'gpu'|'adaptive';status:string;wall_seconds?:number;objective?:number;gap?:number;nodes?:number;detail?:string}
 export type AiProposalData={summary:string;formulation:string;warnings:string[];confirmation_token?:string}
+export type FlightEvent={type:string;detail?:string;elapsed_seconds?:number;iterations?:number;nodes?:number}
+export type ReplayResult={integrity_passed:boolean;reverification_passed:boolean;recorded_status:string;message?:string;tampered_artifact?:string;timeline:FlightEvent[]}
 
 const base=(import.meta.env.VITE_API_BASE_URL||'/api').replace(/\/$/,'')
 async function request<T>(path:string,init?:RequestInit):Promise<T>{
@@ -28,6 +30,9 @@ export const api={
  benchmarkResults:async(id:string)=>{const raw=await request<RawJob>(`/jobs/${id}`);const groups=(raw.result||[]) as unknown as Array<{backend:BenchmarkResult['backend'];records:Array<Record<string,unknown>>}>;return groups.map(g=>{const r=g.records[0]||{};return {backend:g.backend,status:String(r.status||'unavailable'),wall_seconds:num(r.wall_seconds)??undefined,detail:String(r.detail||'')} as BenchmarkResult})},
  explain:async(modelId:string)=>{const x=await request<{available:boolean;explanation:string|null}>('/ai/explain',{method:'POST',body:JSON.stringify({model_id:modelId})});return {text:x.explanation||'AI explanation unavailable'}},
  formulate:async(prompt:string)=>{const x=await request<{available:boolean;proposal?:Record<string,unknown>;confirmation_token?:string}>('/ai/formulations/propose',{method:'POST',body:JSON.stringify({prompt})});return {summary:String(x.proposal?.name||'Structured formulation proposal'),formulation:JSON.stringify(x.proposal,null,2),warnings:['Review every coefficient and bound before confirmation.'],confirmation_token:x.confirmation_token}},
- confirm:(token:string)=>request<Record<string,unknown>>('/ai/formulations/confirm',{method:'POST',body:JSON.stringify({confirmation_token:token})})
+ confirm:(token:string)=>request<Record<string,unknown>>('/ai/formulations/confirm',{method:'POST',body:JSON.stringify({confirmation_token:token})}),
+ record:(id:string,kind='lp')=>request<{recording_id:string;status:string;timeline_events:number}>(`/models/${id}/record`,{method:'POST',body:JSON.stringify({kind,options:{}})}),
+ replay:(id:string,reverify=true)=>request<ReplayResult>(`/recordings/${id}/replay`,{method:'POST',body:JSON.stringify({reverify})}),
+ recordingDownload:(id:string)=>`${base}/recordings/${id}/download`
 }
 export async function pollJob(id:string,onUpdate:(job:Job)=>void,signal?:AbortSignal){while(!signal?.aborted){const current=await api.job(id);onUpdate(current);if(['completed','failed'].includes(current.status))return current;await new Promise(r=>setTimeout(r,1000))}}

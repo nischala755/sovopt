@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "suite": "Netlib LP",
+  "instances": [
+    {
+      "name": "AFIRO",
+      "url": "https://raw.githubusercontent.com/coin-or-tools/Data-Netlib/master/afiro.mps.gz",
+      "sha256": "7bf2faf46c75b9feae51b65354d1b86914b4733a2e71e26c1efe9c817df1554e",
+      "compression": "gzip",
+      "mps_format": "fixed",
+      "published_objective": -464.75314286,
+      "objective_tolerance": 0.000001
+    },
+    {
+      "name": "SC50A",
+      "url": "https://raw.githubusercontent.com/coin-or-tools/Data-Netlib/master/sc50a.mps.gz",
+      "sha256": "31d687049d391fcae5019f607251ddffd15bd0177b48da74fbb4185b32bfd1f2",
+      "compression": "gzip",
+      "mps_format": "fixed",
+      "published_objective": -64.575077059,
+      "objective_tolerance": 0.000001
+    },
+    {
+      "name": "SC50B",
+      "url": "https://raw.githubusercontent.com/coin-or-tools/Data-Netlib/master/sc50b.mps.gz",
+      "sha256": "d1f7547f417bb7499d807d2dae8cfbe6ca4bc790a2a7cd0a9ac05a31ac4e0dbd",
+      "compression": "gzip",
+      "mps_format": "fixed",
+      "published_objective": -70.0,
+      "objective_tolerance": 0.000001
+    }
+  ]
+}

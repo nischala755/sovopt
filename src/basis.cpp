@@ -3,6 +3,7 @@
 #include <cmath>
 #include <numeric>
 #include <set>
+#include <limits>
 
 namespace sovereign {
 namespace {
@@ -24,6 +25,13 @@ SparseBasis::SparseBasis(const CscMatrix& matrix, std::span<const Index> basis_c
         if (!selected.insert(column).second) throw NumericalError("Basis contains duplicate columns");
     }
     const Index n = matrix.rows();
+    std::vector<Triplet> basis_entries;
+    for (Index j = 0; j < n; ++j) {
+        const auto column = matrix.column(basis_columns[j]);
+        for (Index k = 0; k < column.rows.size(); ++k)
+            basis_entries.push_back({column.rows[k], j, column.values[k]});
+    }
+    basis_matrix_ = CscMatrix::from_triplets(n, n, std::move(basis_entries));
     factors_.resize(n);
     permutation_.resize(n);
     std::iota(permutation_.begin(), permutation_.end(), Index{0});
@@ -70,8 +78,7 @@ void SparseBasis::validate_rhs(std::span<const double> rhs) const {
     for (const double value : rhs) (void)finite(value);
 }
 
-std::vector<double> SparseBasis::solve(std::span<const double> rhs) const {
-    validate_rhs(rhs);
+std::vector<double> SparseBasis::solve_factors(std::span<const double> rhs) const {
     const Index n = dimension();
     std::vector<double> result(n);
     for (Index i = 0; i < n; ++i) {
@@ -89,8 +96,7 @@ std::vector<double> SparseBasis::solve(std::span<const double> rhs) const {
     return result;
 }
 
-std::vector<double> SparseBasis::solve_transpose(std::span<const double> rhs) const {
-    validate_rhs(rhs);
+std::vector<double> SparseBasis::solve_transpose_factors(std::span<const double> rhs) const {
     const Index n = dimension();
     std::vector<double> work(rhs.begin(), rhs.end());
     // U^T y = rhs, then L^T z = y, then x = P^T z.
@@ -105,6 +111,67 @@ std::vector<double> SparseBasis::solve_transpose(std::span<const double> rhs) co
     }
     std::vector<double> result(n);
     for (Index i = 0; i < n; ++i) result[permutation_[i]] = work[i];
+    return result;
+}
+
+namespace {
+double infinity_norm(std::span<const double> values) {
+    double result = 0;
+    for (double value : values) result = std::max(result, std::abs(value));
+    return result;
+}
+double matrix_infinity_norm(const CscMatrix& matrix, bool transpose) {
+    std::vector<double> sums(transpose ? matrix.columns() : matrix.rows(), 0);
+    for (Index j=0;j<matrix.columns();++j) {
+        const auto column=matrix.column(j);
+        for (Index k=0;k<column.rows.size();++k)
+            sums[transpose ? j : column.rows[k]] += std::abs(column.values[k]);
+    }
+    return infinity_norm(sums);
+}
+}
+
+std::vector<double> SparseBasis::solve(std::span<const double> rhs) const {
+    validate_rhs(rhs);
+    auto result=solve_factors(rhs);
+    last_solve_info_={};
+    double previous=std::numeric_limits<double>::infinity();
+    for (Index pass=0;pass<=3;++pass) {
+        const auto product=basis_matrix_.multiply(result);
+        std::vector<double> residual(rhs.size());
+        for (Index i=0;i<rhs.size();++i) residual[i]=finite(rhs[i]-product[i]);
+        const double absolute=infinity_norm(residual);
+        const double scale=std::max(std::numeric_limits<double>::min(),
+            infinity_norm(rhs)+matrix_infinity_norm(basis_matrix_,false)*infinity_norm(result));
+        last_solve_info_.scaled_residual=absolute/scale;
+        if (absolute==0 || pass==3 || !(absolute<previous)) break;
+        previous=absolute;
+        const auto correction=solve_factors(residual);
+        for (Index i=0;i<result.size();++i) result[i]=finite(result[i]+correction[i]);
+        ++last_solve_info_.refinements;
+    }
+    return result;
+}
+
+std::vector<double> SparseBasis::solve_transpose(std::span<const double> rhs) const {
+    validate_rhs(rhs);
+    auto result=solve_transpose_factors(rhs);
+    last_solve_info_={};
+    double previous=std::numeric_limits<double>::infinity();
+    for (Index pass=0;pass<=3;++pass) {
+        const auto product=basis_matrix_.transpose_multiply(result);
+        std::vector<double> residual(rhs.size());
+        for (Index i=0;i<rhs.size();++i) residual[i]=finite(rhs[i]-product[i]);
+        const double absolute=infinity_norm(residual);
+        const double scale=std::max(std::numeric_limits<double>::min(),
+            infinity_norm(rhs)+matrix_infinity_norm(basis_matrix_,true)*infinity_norm(result));
+        last_solve_info_.scaled_residual=absolute/scale;
+        if (absolute==0 || pass==3 || !(absolute<previous)) break;
+        previous=absolute;
+        const auto correction=solve_transpose_factors(residual);
+        for (Index i=0;i<result.size();++i) result[i]=finite(result[i]+correction[i]);
+        ++last_solve_info_.refinements;
+    }
     return result;
 }
 

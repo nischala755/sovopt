@@ -12,7 +12,7 @@ pybind11_add_module(sovereign_optimizer bindings.cpp
   "${ROOT}/src/solution.cpp" "${ROOT}/src/verification.cpp" "${ROOT}/src/lp_standard.cpp"
   "${ROOT}/src/lp.cpp" "${ROOT}/src/cuts.cpp" "${ROOT}/src/mip.cpp")
 target_sources(sovereign_optimizer PRIVATE "${ROOT}/src/backend.cpp" "${ROOT}/src/fingerprint.cpp"
-  "${ROOT}/src/benchmark.cpp" "${ROOT}/src/generators.cpp")
+  "${ROOT}/src/benchmark.cpp" "${ROOT}/src/generators.cpp" "${ROOT}/src/recorder.cpp")
 target_include_directories(sovereign_optimizer PRIVATE "${ROOT}/include" "${ROOT}/src")
 if(MSVC)
   target_compile_options(sovereign_optimizer PRIVATE /W4 /WX /permissive- /utf-8)

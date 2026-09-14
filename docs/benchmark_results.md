@@ -1,28 +1,25 @@
 # Benchmark evidence and acceptance status
 
-All measurements below were produced locally on the documented MSVC Release
-build. Reference objectives come from the Netlib LP collection. Downloaded
-benchmark files live under ignored build output and are not repackaged here.
+Measured on 2026-09-14 using the MSVC 19.51 Release build on Windows 11. The
+checked-in manifest verifies downloaded archives with SHA-256 before execution.
+Times below are end-to-end harness wall times; solver time excludes process startup.
 
-| Instance | Reference objective | AstraNiti result | Iterations | Verification |
-|---|---:|---:|---:|---|
-| AFIRO | -464.75314286 | -464.7531428571429 | 49 | Passed |
-| SC50A | -64.575077059 | -64.5750770585645 | 55 | Certificate postsolve failed |
-| SC50B | -70 | No terminal claim | 100,000 | Iteration limit |
+| Instance | Source | Published objective | AstraNiti objective | Pivots/nodes | Wall time | Verification |
+|---|---|---:|---:|---:|---:|---|
+| AFIRO | Netlib | -464.75314286 | -464.75314285714285 | 47 / 0 | 0.0802 s | Passed |
+| SC50A | Netlib | -64.575077059 | -64.5750770585645 | 55 / 0 | 0.0670 s | Passed |
+| SC50B | Netlib | -70 | -70 | 52 / 0 | 0.0207 s | Passed |
+| flugpl | MIPLIB | 1201500 | no terminal claim | 100000 / 272 | 3.506 s | Iteration limit |
 
-AFIRO demonstrates successful execution on a recognised benchmark and agrees
-with the published objective. SC50A and SC50B are retained as transparent
-release blockers for any claim of broad Netlib coverage or industrial numerical
-robustness. SC50A finds the reference primal objective but correctly refuses to
-label it verified because its reconstructed dual certificate is invalid. SC50B
-exposes unresolved degeneracy/cycling behavior.
+SC50B previously exhausted 100,000 simplex iterations. Harris two-pass ratio
+selection now reaches the published primal objective in 52 pivots. Conservative
+general-row implied-domain propagation allows both SC50 certificates to be
+checked in original coordinates without accepting multipliers on infinite bounds.
 
-No established external solver was installed or invoked in the production path.
-A fair performance comparison still requires an isolated benchmark runner,
-pinned solver/version, identical model semantics, common hardware and repeated
-wall-clock measurements. Until that exists, this project makes no competitive
-performance claim.
+The MIPLIB `flugpl` failure is retained: its tree exhausted the global LP-iteration
+budget at 272 nodes with best bound 1178114.9999999998 and no verified incumbent.
+MIPLIB-scale MILP robustness therefore remains incomplete.
 
-The official Netlib directory identifies these as compressed MPS LP problems:
-<https://www.netlib.org/lp/data/>. Objective references were checked against the
-Netlib-derived published table linked from the project research notes.
+No `highs`, `cbc`, `scip`, or `glpsol` executable was found on this host. The
+adapter in `benchmarks/baselines/` reports unavailable rather than inventing a
+comparison. External executables remain outside the AstraNiti production path.

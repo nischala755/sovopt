@@ -26,6 +26,18 @@ def test_native_engine_solves_repository_small_lp():
         assert experiments[1]["records"][0]["status"] == "unavailable"
 
 
+def test_native_engine_records_and_replays_real_solve(tmp_path):
+    native = pytest.importorskip("sovereign_optimizer")
+    engine = native.NativeEngine()
+    model = Path(__file__).parents[2] / "examples" / "small_lp.mps"
+    bundle = tmp_path / "native.astra"
+    recorded = engine.record(str(model), str(bundle), "lp", {})
+    assert recorded["status"] == "optimal"
+    replay = engine.replay(str(bundle), True)
+    assert replay["integrity_passed"] is True
+    assert replay["reverification_passed"] is True
+
+
 def test_fastapi_contract_runs_native_solve_and_execution_benchmark(tmp_path):
     model = Path(__file__).parents[2] / "examples" / "small_lp.mps"
     app = create_app(Settings(data_dir=tmp_path), engine=NativeEngine())

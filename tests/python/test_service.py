@@ -39,6 +39,15 @@ class FakeEngine:
     def create_model(self, formulation: dict):
         return {"name": formulation["name"], "variables": len(formulation["variables"])}
 
+    def record(self, path: Path, bundle: Path, kind: str, options: dict):
+        bundle.mkdir()
+        (bundle / "manifest.json").write_text("{}")
+        return {"status": "optimal", "integrity_passed": True, "timeline": [{"type": "SOLVE_COMPLETED"}]}
+
+    def replay(self, bundle: Path, reverify: bool):
+        return {"integrity_passed": True, "reverification_passed": reverify,
+                "recorded_status": "optimal", "timeline": [{"type": "SOLVE_COMPLETED"}]}
+
 
 class FakeAI:
     def explain(self, payload: dict):
@@ -148,6 +157,21 @@ def test_job_failure_is_isolated_and_telemetry_is_bounded(tmp_path):
         second = wait_job(c, c.post(f"/models/{mid}/solve", json={"kind":"lp"}).json()["job_id"])
         assert second["state"] == "succeeded"
         assert len(c.get(f"/jobs/{second['id']}/telemetry").json()["events"]) == 2
+
+
+def test_flight_recorder_api_returns_actual_integrity_and_timeline(tmp_path):
+    for c in client(tmp_path):
+        mid = upload(c)
+        created = c.post(f"/models/{mid}/record", json={"kind": "lp", "options": {}})
+        assert created.status_code == 201
+        recording_id = created.json()["recording_id"]
+        replay = c.post(f"/recordings/{recording_id}/replay", json={"reverify": True})
+        assert replay.status_code == 200
+        assert replay.json()["integrity_passed"] is True
+        assert replay.json()["timeline"][0]["type"] == "SOLVE_COMPLETED"
+        downloaded = c.get(f"/recordings/{recording_id}/download")
+        assert downloaded.status_code == 200
+        assert downloaded.headers["content-type"] == "application/zip"
 
 
 def test_apparent_secret_is_rejected_before_mistral_network_access():

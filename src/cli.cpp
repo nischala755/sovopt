@@ -4,6 +4,7 @@
 #include <sovereign/validation.hpp>
 #include <sovereign/lp.hpp>
 #include <sovereign/mip.hpp>
+#include <sovereign/recorder.hpp>
 #include <iomanip>
 #include <locale>
 #include <optional>
@@ -17,11 +18,13 @@
 namespace sovereign {
 namespace {
 constexpr std::string_view usage =
-    "Sovereign Optimizer 0.1.0 - model foundation (no solver)\n"
+    "AstraNiti Sovereign Optimizer 0.1.0\n"
     "Usage: sovereign inspect|validate|solve MODEL.mps [--json] [--config FILE]\n"
     "       [--mps-format free|fixed]\n"
     "       solve options: [--method auto|simplex] [--branching most_fractional|pseudocost]\n"
     "       [--time-limit SEC] [--node-limit N] [--iteration-limit N] [--mip-gap GAP]\n"
+    "       [--record RUN.astra]\n"
+    "       sovereign replay RUN.astra [--reverify]\n"
     "       sovereign --help | --version\n";
 
 void print_statistics(std::ostream& out, const Model& m, bool json) {
@@ -71,6 +74,18 @@ int run_cli(std::span<const std::string_view> args, std::ostream& output, std::o
     try {
         if (args.size() == 1 && args[0] == "--help") { output << usage; return output ? 0 : 4; }
         if (args.size() == 1 && args[0] == "--version") { output << "Sovereign Optimizer 0.1.0\n"; return output ? 0 : 4; }
+        if (args.size()>=2 && args[0]=="replay") {
+            if(args.size()>3 || (args.size()==3&&args[2]!="--reverify")) throw ConfigurationError(std::string(usage));
+            const auto replay=replay_solve(std::filesystem::path(args[1]),args.size()==3);
+            if(!replay.integrity_passed) {
+                output<<replay.message<<"\n";
+                if(!replay.tampered_artifact.empty()) output<<"Artifact: "<<replay.tampered_artifact<<"\nExpected SHA-256: "<<replay.expected_sha256<<"\nActual SHA-256: "<<replay.actual_sha256<<"\n";
+                return 4;
+            }
+            output<<"Integrity: PASS\nRecorded status: "<<replay.recorded_status<<"\nTimeline events: "<<replay.timeline.size()<<"\n";
+            if(args.size()==3) output<<"Reverification: "<<(replay.reverification_passed?"PASS":"FAILED")<<"\n";
+            return (!output || (args.size()==3&&!replay.reverification_passed))?4:0;
+        }
         if (args.size() < 2 || (args[0] != "inspect" && args[0] != "validate" && args[0]!="solve")) throw ConfigurationError(std::string(usage));
         const auto path = args[1];
         if (path.starts_with("--")) throw ConfigurationError("expected model path");
@@ -78,6 +93,7 @@ int run_cli(std::span<const std::string_view> args, std::ostream& output, std::o
         std::optional<std::string> config_path;
         std::optional<MpsFormat> format;
         std::optional<std::string> method,branching;
+        std::optional<std::string> record_path;
         std::optional<double> time_limit,gap;
         std::optional<Index> node_limit,iteration_limit;
         std::unordered_set<std::string_view> options;
@@ -85,9 +101,10 @@ int run_cli(std::span<const std::string_view> args, std::ostream& output, std::o
             const auto option = args[i];
             if (!options.insert(option).second) throw ConfigurationError("duplicate option: " + std::string(option));
             if (option == "--json") json = true;
-            else if (option == "--config" || option == "--mps-format" || option=="--method" || option=="--branching" || option=="--time-limit" || option=="--mip-gap" || option=="--node-limit" || option=="--iteration-limit") {
+            else if (option == "--config" || option == "--mps-format" || option=="--method" || option=="--branching" || option=="--time-limit" || option=="--mip-gap" || option=="--node-limit" || option=="--iteration-limit" || option=="--record") {
                 if (++i == args.size() || args[i].starts_with("--")) throw ConfigurationError("missing option value");
                 if (option == "--config") config_path = std::string(args[i]);
+                else if (option == "--record") record_path = std::string(args[i]);
                 else if (args[i] == "free") format = MpsFormat::free;
                 else if (args[i] == "fixed") format = MpsFormat::fixed;
                 else if(option=="--mps-format") throw ConfigurationError("MPS format must be free or fixed");
@@ -117,8 +134,12 @@ int run_cli(std::span<const std::string_view> args, std::ostream& output, std::o
         result.imbue(std::locale::classic()); result << std::setprecision(17);
         if (args[0] == "inspect") print_statistics(result,model,json);
         else if(args[0]=="solve") {
+            std::vector<TelemetryEvent> events;
+            const auto existing=config.solver.telemetry;
+            config.solver.telemetry=[&](const TelemetryEvent& event){events.push_back(event);if(existing)existing(event);};
             const bool integer=std::any_of(model.variables.begin(),model.variables.end(),[](const auto& v){return v.type!=VariableType::continuous;});
             const auto solved=integer ? solve_mip(model,config.solver) : solve_lp(model,config.solver);
+            if(record_path) record_solve(*record_path,std::filesystem::path(path),model,config.solver,solved,events);
             print_solution(result,model,solved,json);
             output<<result.str();
             if(!output) throw std::runtime_error("output write failure");

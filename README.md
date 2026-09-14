@@ -41,9 +41,10 @@ flowchart LR
 | Robust LP/MILP engine | Revised simplex, branch-and-bound, certificates and regression tests | Implemented |
 | CLI and application API | Native CLI, pybind11 and asynchronous FastAPI jobs | Implemented |
 | Engineering dashboard | Model inspection, telemetry, verification and experiment views | Implemented |
-| Recognised benchmark | Netlib AFIRO reaches the published optimum and passes independent verification | Demonstrated |
-| Broad Netlib/MIPLIB coverage | SC50A certificate postsolve and SC50B degeneracy remain unresolved | In progress |
-| Established-solver performance comparison | Prohibited from the production solver path; reproducible comparison harness still required | In progress |
+| Recognised benchmarks | Netlib AFIRO, SC50A and SC50B match published optima and pass independent verification | Demonstrated |
+| Broad Netlib/MIPLIB coverage | MIPLIB flugpl currently reaches the iteration limit | In progress |
+| Established-solver performance comparison | Isolated adapter exists; no reference executable was available on the measured host | In progress |
+| Optimization Flight Recorder | Real solve timeline, certificate, SHA-256 integrity, replay and independent re-verification | Implemented |
 | Challenging large-scale robustness | Current sparse refactorization architecture is not yet an industrial-scale performance result | In progress |
 | GPU acceleration | Real optional CUDA kernels exist; no CUDA hardware/toolkit was available for measurement | Unverified |
 
@@ -99,6 +100,8 @@ build/msvc/Debug/sovereign.exe inspect examples/ranges.mps --config examples/ins
 build/msvc/Debug/sovereign.exe validate examples/small_lp.mps --json
 build/msvc/Debug/sovereign.exe solve examples/small_lp.mps --json
 build/msvc/Debug/sovereign.exe solve examples/mixed.mps --branching pseudocost
+build/msvc/Debug/sovereign.exe solve examples/small_lp.mps --record run.astra
+build/msvc/Debug/sovereign.exe replay run.astra --reverify
 ```
 
 Use `--mps-format fixed` for traditional fixed fields and blank name
@@ -113,6 +116,16 @@ terminal claims that pass independent original-model verification.
 Logs are JSON lines on stderr; `--json` produces a single JSON document on stdout.
 Exit codes distinguish success, input/configuration errors, numerical failure,
 and resource limits; run `sovereign --help` for the current mapping.
+
+### Optimization Flight Recorder
+
+`--record` captures the original MPS, model fingerprint, normalized solver
+configuration, presolve state, numerical telemetry, event timeline, solution,
+certificate and verification report. `checksums.json` covers every artifact with
+SHA-256. Replay validates integrity before reading mathematical results;
+`--reverify` invokes the independent original-model verifier again. The REST API
+can create, replay and download bundles, and the dashboard renders the recorded
+timeline and integrity state from those API responses.
 
 ### Example statistics
 

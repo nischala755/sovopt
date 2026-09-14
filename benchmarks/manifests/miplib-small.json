@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "suite": "MIPLIB",
+  "instances": [
+    {
+      "name": "flugpl",
+      "url": "https://miplib.zib.de/WebData/instances/flugpl.mps.gz",
+      "sha256": "d0b817caf496c95336f64815a740d6a54db1e37924785fcfd3c5da3ee6a15640",
+      "compression": "gzip",
+      "mps_format": "fixed",
+      "published_objective": 1201500.0,
+      "objective_tolerance": 0.000001
+    }
+  ]
+}

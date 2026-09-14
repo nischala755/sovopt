@@ -57,8 +57,15 @@ TEST_CASE("LP removes redundant phase I artificial basics safely", "[lp]") {
     optimal(make_lp({1,2},{{"x"},{"y"}},{{"a",1,1},{"b",2,2},{"zero",0,0}},{{0,0,1},{0,1,1},{1,0,2},{1,1,2}}),1);
 }
 TEST_CASE("Bland pricing terminates the classical cycling example", "[lp][regression]") {
-    optimal(make_lp({10,-57,-9,-24},{{"a"},{"b"},{"c"},{"d"}},{{"r1",-infinity,0},{"r2",-infinity,0},{"r3",-infinity,1}},
-        {{0,0,.5},{0,1,-5.5},{0,2,-2.5},{0,3,9},{1,0,.5},{1,1,-1.5},{1,2,-.5},{1,3,1},{2,0,1}},ObjectiveSense::maximize),1);
+    const auto model=make_lp({10,-57,-9,-24},{{"a"},{"b"},{"c"},{"d"}},{{"r1",-infinity,0},{"r2",-infinity,0},{"r3",-infinity,1}},
+        {{0,0,.5},{0,1,-5.5},{0,2,-2.5},{0,3,9},{1,0,.5},{1,1,-1.5},{1,2,-.5},{1,3,1},{2,0,1}},ObjectiveSense::maximize);
+    std::vector<std::string> events;
+    SolverOptions options; options.telemetry=[&](const auto& event){events.push_back(event.type);};
+    const auto result=solve_lp(model,options);
+    REQUIRE(result.status==SolveStatus::optimal);
+    REQUIRE(result.objective==Approx(1));
+    REQUIRE(std::find(events.begin(),events.end(),"FACTORIZATION")!=events.end());
+    REQUIRE(std::find(events.begin(),events.end(),"RATIO_TEST")!=events.end());
 }
 TEST_CASE("LP scaling resolves coefficient magnitude differences", "[lp]") {
     const auto m=make_lp({1,1},{{"x"},{"y"}},{{"a",-infinity,1e-9},{"b",-infinity,2e9}},{{0,0,1e-9},{1,1,1e9}},ObjectiveSense::maximize);
@@ -103,4 +110,16 @@ TEST_CASE("Phase I does not claim infeasibility from small free-variable residua
     const auto m=make_lp({0,0,0},{{"x",-infinity,infinity},{"y"},{"z",-infinity,infinity}},
         {{"a",1,infinity},{"b",-infinity,0},{"c",0,0}},{{0,1,1},{0,0,1e-9},{1,1,1},{2,0,1},{2,2,1}});
     const auto r=solve_lp(m); INFO(r.message); REQUIRE(r.status!=SolveStatus::infeasible);
+}
+TEST_CASE("Netlib SC50 certificates verify in original coordinates", "[lp][regression][netlib]") {
+    for(const auto& [name,expected]:std::vector<std::pair<std::string,double>>{{"sc50a",-64.575077059},{"sc50b",-70.0}}) {
+        MpsOptions mps; mps.format=MpsFormat::fixed;
+        const auto model=read_mps_file(std::string(SOVEREIGN_SOURCE_DIR)+"/tests/data/"+name+".mps",mps);
+        const auto result=solve_lp(model);
+        INFO(name); INFO(result.message);
+        REQUIRE(result.status==SolveStatus::optimal);
+        REQUIRE(result.verification.passed);
+        REQUIRE(result.objective==Approx(expected).margin(1e-6));
+        REQUIRE(result.iterations<1000);
+    }
 }

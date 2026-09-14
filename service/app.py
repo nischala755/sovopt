@@ -4,6 +4,7 @@ import hashlib
 import os
 import re
 import secrets
+import shutil
 from contextlib import asynccontextmanager
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
@@ -13,6 +14,7 @@ from typing import Literal
 
 from fastapi import FastAPI, Header, HTTPException, Request
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from pydantic import BaseModel, ConfigDict, Field
 
 from .ai import AIProvider, AIUnavailable, MistralProvider, sanitized_explanation_payload
@@ -50,6 +52,7 @@ class ExplainRequest(StrictModel):
     benchmark: dict = Field(default_factory=dict)
 class ProposeRequest(StrictModel): prompt: str = Field(min_length=1, max_length=4000)
 class ConfirmRequest(StrictModel): confirmation_token: str
+class ReplayRequest(StrictModel): reverify: bool = False
 
 
 def create_app(settings: Settings | None = None, *, engine: Engine | None = None,
@@ -57,6 +60,7 @@ def create_app(settings: Settings | None = None, *, engine: Engine | None = None
     cfg = settings or Settings()
     cfg.data_dir.mkdir(parents=True, exist_ok=True)
     uploads = cfg.data_dir / "uploads"; uploads.mkdir(exist_ok=True)
+    recordings = cfg.data_dir / "recordings"; recordings.mkdir(exist_ok=True)
     store, backend = Store(cfg.data_dir / "metadata.sqlite3"), engine or NativeEngine()
     ai = ai_provider or MistralProvider()
     pool = ThreadPoolExecutor(max_workers=cfg.max_active_jobs, thread_name_prefix="sovereign-job")
@@ -159,6 +163,31 @@ def create_app(settings: Settings | None = None, *, engine: Engine | None = None
         if not backend.available: raise HTTPException(503,"optimization engine unavailable")
         _,path=model_or_404(model_id)
         return submit("execution_benchmark",lambda _: backend.execution_benchmark(path,request.backends,request.repetitions))
+
+    @app.post("/models/{model_id}/record",status_code=201)
+    def record(model_id: str, request: SolveRequest):
+        if not backend.available: raise HTTPException(503,"optimization engine unavailable")
+        _,path=model_or_404(model_id); recording_id=secrets.token_hex(16); bundle=recordings/f"{recording_id}.astra"
+        try: result=backend.record(path,bundle,request.kind,request.options)
+        except Exception as exc: raise HTTPException(422,"flight recording failed") from exc
+        return {"recording_id":recording_id,"status":result.get("status"),"timeline_events":result.get("timeline_events",0)}
+
+    def recording_or_404(recording_id: str):
+        if not re.fullmatch(r"[0-9a-f]{32}",recording_id): raise HTTPException(404,"recording not found")
+        bundle=(recordings/f"{recording_id}.astra").resolve()
+        if recordings.resolve() not in bundle.parents or not bundle.is_dir(): raise HTTPException(404,"recording not found")
+        return bundle
+
+    @app.post("/recordings/{recording_id}/replay")
+    def replay(recording_id: str, request: ReplayRequest):
+        try: return backend.replay(recording_or_404(recording_id),request.reverify)
+        except Exception as exc: raise HTTPException(422,"flight replay failed") from exc
+
+    @app.get("/recordings/{recording_id}/download")
+    def download_recording(recording_id: str):
+        bundle=recording_or_404(recording_id); archive=recordings/f"{recording_id}.zip"
+        shutil.make_archive(str(archive.with_suffix("")),"zip",root_dir=bundle)
+        return FileResponse(archive,media_type="application/zip",filename=f"{recording_id}.astra.zip")
 
     @app.get("/jobs/{job_id}")
     def job(job_id: str):

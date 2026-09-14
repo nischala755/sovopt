@@ -51,3 +51,17 @@ TEST_CASE("CLI detects output failure and explicit format overrides configuratio
     REQUIRE(run({"inspect",lp,"--config",config,"--mps-format","fixed"}).code == 3);
     REQUIRE(run({"inspect",lp,"--config",config,"--mps-format","free"}).code == 0);
 }
+
+TEST_CASE("CLI records and replays tamper evident solves", "[cli][recorder]") {
+    const auto bundle=std::filesystem::temp_directory_path()/"astraniti-cli-record.astra";
+    std::filesystem::remove_all(bundle); const auto bundle_text=bundle.string();
+    auto recorded=run({"solve",lp,"--record",bundle_text});
+    INFO(recorded.err); REQUIRE(recorded.code==0); REQUIRE(std::filesystem::is_directory(bundle));
+    auto replayed=run({"replay",bundle_text,"--reverify"});
+    INFO(replayed.err); REQUIRE(replayed.code==0); REQUIRE(replayed.out.find("Integrity: PASS")!=std::string::npos);
+    REQUIRE(replayed.out.find("Reverification: PASS")!=std::string::npos);
+    std::ofstream(bundle/"solution.json",std::ios::app)<<"tamper";
+    auto tampered=run({"replay",bundle_text});
+    REQUIRE(tampered.code!=0); REQUIRE(tampered.out.find("TAMPER DETECTED")!=std::string::npos);
+    std::filesystem::remove_all(bundle);
+}

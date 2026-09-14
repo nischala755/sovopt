@@ -7,6 +7,7 @@
 #include <sovereign/fingerprint.hpp>
 #include <sovereign/mip.hpp>
 #include <sovereign/mps.hpp>
+#include <sovereign/recorder.hpp>
 #include <sovereign/verification.hpp>
 #include <sovereign/validation.hpp>
 #include <map>
@@ -90,6 +91,16 @@ public:
      for(const auto& x:r.records){ py::dict record; record["backend"]=std::string(backend_name(x.backend)); record["status"]=x.executed?(x.converged?"converged":"executed"):"unavailable"; record["wall_seconds"]=x.wall_seconds; record["cpu_seconds"]=x.cpu_seconds; if(x.gpu_kernel_seconds) record["gpu_kernel_seconds"]=*x.gpu_kernel_seconds; else record["gpu_kernel_seconds"]=py::none(); if(x.transfer_seconds) record["transfer_seconds"]=*x.transfer_seconds; else record["transfer_seconds"]=py::none(); record["iterations"]=x.iterations; if(std::isfinite(x.primal_residual)) record["primal_residual"]=x.primal_residual; else record["primal_residual"]=py::none(); record["detail"]=x.message; records.append(record); }
      group["records"]=records; output.append(group); } return output; }
  py::dict create_model(const py::dict& d){ return stats(formulation(d)); }
+ py::dict record(const std::string& p,const std::string& bundle,const std::string& kind,const py::dict& o){
+   auto model=read_mps_file(p);std::vector<TelemetryEvent> events;auto configured=options(o);
+   configured.telemetry=[&](const auto& event){events.push_back(event);};SolveResult solved;
+   {py::gil_scoped_release release;solved=kind=="mip"?solve_mip(model,configured):solve_lp(model,configured);record_solve(bundle,p,model,configured,solved,events);}
+   auto d=result(solved);d["recording_path"]=bundle;d["timeline_events"]=events.size();return d;
+ }
+ py::dict replay(const std::string& bundle,bool reverify){const auto r=replay_solve(bundle,reverify);py::dict d;
+   d["integrity_passed"]=r.integrity_passed;d["reverification_passed"]=r.reverification_passed;d["recorded_status"]=r.recorded_status;d["message"]=r.message;
+   d["tampered_artifact"]=r.tampered_artifact;d["expected_sha256"]=r.expected_sha256;d["actual_sha256"]=r.actual_sha256;py::list timeline;
+   for(const auto& e:r.timeline){py::dict event;event["type"]=e.type;event["elapsed_seconds"]=e.elapsed_seconds;event["iterations"]=e.iterations;event["nodes"]=e.nodes;event["detail"]=e.detail;timeline.append(event);}d["timeline"]=timeline;return d; }
 };
 
 PYBIND11_MODULE(sovereign_optimizer,m){
@@ -103,4 +114,5 @@ PYBIND11_MODULE(sovereign_optimizer,m){
  m.def("verify_unboundedness",[](const Model& model,const std::vector<double>& x,const std::vector<double>& ray){return report(verify_unboundedness(model,x,ray));});
  m.def("model_from_formulation",&formulation);
  py::class_<NativeEngine>(m,"NativeEngine").def(py::init<>()).def("capabilities",&NativeEngine::capabilities).def("inspect",&NativeEngine::inspect).def("solve",&NativeEngine::solve)
- .def("verify",&NativeEngine::verify).def("benchmark",&NativeEngine::benchmark).def("execution_benchmark",&NativeEngine::execution_benchmark).def("create_model",&NativeEngine::create_model); }
+ .def("verify",&NativeEngine::verify).def("benchmark",&NativeEngine::benchmark).def("execution_benchmark",&NativeEngine::execution_benchmark).def("create_model",&NativeEngine::create_model)
+ .def("record",&NativeEngine::record).def("replay",&NativeEngine::replay); }
