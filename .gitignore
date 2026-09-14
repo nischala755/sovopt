@@ -1,0 +1,12 @@
+/build/
+/.tools/
+/.venv/
+/.env
+/.sovereign-data/
+/CMakeUserPresets.json
+/web/node_modules/
+/web/dist/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+*.user

@@ -1,0 +1,56 @@
+if(NOT DEFINED CLI OR NOT DEFINED SOURCE)
+  message(FATAL_ERROR "CLI and SOURCE are required")
+endif()
+
+function(check_model fixture variables constraints nonzeros integers binaries equalities ranged sense offset)
+  execute_process(COMMAND "${CLI}" inspect "${SOURCE}/examples/${fixture}.mps" --json
+    RESULT_VARIABLE status OUTPUT_VARIABLE output ERROR_VARIABLE errors)
+  if(NOT status EQUAL 0)
+    message(FATAL_ERROR "${fixture}: CLI failed: ${status}: ${errors}")
+  endif()
+  foreach(pair "variables;${variables}" "constraints;${constraints}" "nonzeros;${nonzeros}"
+      "integer_variables;${integers}" "binary_variables;${binaries}" "equality_rows;${equalities}"
+      "ranged_rows;${ranged}" "objective_sense;${sense}" "objective_offset;${offset}" "validation;passed" "scope;structural")
+    list(GET pair 0 key)
+    list(GET pair 1 expected)
+    string(JSON actual ERROR_VARIABLE json_error GET "${output}" "${key}")
+    if(json_error OR NOT "${actual}" STREQUAL "${expected}")
+      message(FATAL_ERROR "${fixture}.${key}: expected ${expected}, got ${actual}; JSON error ${json_error}")
+    endif()
+  endforeach()
+  execute_process(COMMAND "${CLI}" validate "${SOURCE}/examples/${fixture}.mps"
+    RESULT_VARIABLE status OUTPUT_VARIABLE validation ERROR_VARIABLE errors)
+  if(NOT status EQUAL 0 OR NOT validation MATCHES "Structural validation: PASSED")
+    message(FATAL_ERROR "${fixture}: validation failed: ${errors}")
+  endif()
+endfunction()
+
+check_model(small_lp 2 2 4 0 0 0 0 maximize 0)
+check_model(mixed 3 2 5 2 1 1 0 minimize 0)
+check_model(ranges 2 3 4 0 0 1 2 minimize 5)
+
+execute_process(COMMAND "${CLI}" unsupported "${SOURCE}/examples/small_lp.mps"
+  RESULT_VARIABLE status OUTPUT_VARIABLE output ERROR_VARIABLE errors)
+if(NOT status EQUAL 2 OR NOT output STREQUAL "")
+  message(FATAL_ERROR "Unsupported command must fail without producing a result")
+endif()
+execute_process(COMMAND "${CLI}" solve "${SOURCE}/examples/small_lp.mps" --json
+  RESULT_VARIABLE status OUTPUT_VARIABLE solve_output ERROR_VARIABLE solve_errors)
+if(NOT status EQUAL 0)
+  message(FATAL_ERROR "Solve failed: ${status}: ${solve_errors}")
+endif()
+string(JSON solve_status GET "${solve_output}" status)
+string(JSON solve_objective GET "${solve_output}" objective)
+string(JSON solve_verified GET "${solve_output}" verified)
+if(NOT solve_status STREQUAL "optimal" OR NOT solve_objective EQUAL 9 OR NOT solve_verified)
+  message(FATAL_ERROR "Unexpected solve result: ${solve_output}")
+endif()
+execute_process(COMMAND "${CLI}" inspect "${SOURCE}/examples/absent.mps" --json
+  RESULT_VARIABLE status OUTPUT_VARIABLE output ERROR_VARIABLE errors)
+if(NOT status EQUAL 3 OR NOT output STREQUAL "")
+  message(FATAL_ERROR "Missing model must fail without producing a result")
+endif()
+string(JSON level GET "${errors}" level)
+if(NOT level STREQUAL "error")
+  message(FATAL_ERROR "Failure must produce a JSON error record on stderr")
+endif()

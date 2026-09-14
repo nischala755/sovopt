@@ -1,0 +1,106 @@
+#include <catch2/catch_test_macros.hpp>
+#include <catch2/catch_approx.hpp>
+#include <sovereign/lp.hpp>
+#include <sovereign/verification.hpp>
+#include <sovereign/mps.hpp>
+#include <random>
+using namespace sovereign;
+using Catch::Approx;
+namespace {
+Model make_lp(std::vector<double> c, std::vector<Variable> vars,
+              std::vector<Constraint> rows, std::vector<Triplet> a, ObjectiveSense sense=ObjectiveSense::minimize) {
+    Model m; m.objective=std::move(c); m.variables=std::move(vars); m.constraints=std::move(rows); m.sense=sense;
+    m.matrix=CscMatrix::from_triplets(m.constraints.size(),m.variables.size(),std::move(a)); return m;
+}
+void optimal(const Model& m, double objective) {
+    for (bool scaling : {false,true}) {
+        SolverOptions options; options.scaling=scaling;
+        const auto r=solve_lp(m,options); INFO(r.message);
+        REQUIRE(r.status==SolveStatus::optimal); REQUIRE(r.verification.passed);
+        REQUIRE(r.objective==Approx(objective).margin(1e-7));
+        REQUIRE(verify_optimality(m,r.primal,r.objective,r.certificate).passed);
+        REQUIRE(r.mip_gap==0);
+    }
+}
+}
+TEST_CASE("Revised simplex solves the hand-verifiable maximum with certificate", "[lp]") {
+    auto m=read_mps_file(std::string(SOVEREIGN_SOURCE_DIR)+"/examples/small_lp.mps");
+    optimal(m,9);
+    const auto r=solve_lp(m); REQUIRE(r.primal[0]==Approx(1)); REQUIRE(r.primal[1]==Approx(3));
+}
+TEST_CASE("LP relaxation certificates are independent of integer metadata", "[lp][regression]") {
+    const auto m=make_lp({10,7},{{"x",0,infinity,VariableType::integer},{"y",0,infinity,VariableType::integer}},
+        {{"capacity",-infinity,15}},{{0,0,5},{0,1,3}},ObjectiveSense::maximize);
+    const auto r=solve_lp(m); INFO(r.message); INFO(r.certificate.row_lower[0]); INFO(r.certificate.row_upper[0]);
+    INFO(r.certificate.variable_lower[0]); INFO(r.certificate.variable_lower[1]); REQUIRE(r.status==SolveStatus::optimal); REQUIRE(r.objective==Approx(35));
+}
+TEST_CASE("LP handles greater-than equality free upper-only and fixed variables", "[lp]") {
+    optimal(make_lp({1,2},{{"x"},{"y"}},{{"a",3,infinity},{"b",4,infinity}},{{0,0,1},{0,1,1},{1,0,1},{1,1,2}}),4);
+    optimal(make_lp({1},{{"x",-infinity,infinity}},{{"eq",-3,-3}},{{0,0,1}}),-3);
+    optimal(make_lp({-1},{{"x",-infinity,5}}, {},{}),-5);
+    optimal(make_lp({3,2},{{"x",2,2},{"y"}},{{"r",5,infinity}},{{0,0,1},{0,1,1}}),12);
+    Model empty; empty.objective_offset=7; optimal(empty,7);
+}
+TEST_CASE("LP phase I proves infeasibility in original coordinates", "[lp]") {
+    const auto m=make_lp({1},{{"x"}},{{"a",2,infinity},{"b",-infinity,1}},{{0,0,1},{1,0,1}});
+    const auto r=solve_lp(m); INFO(r.message);
+    REQUIRE(r.status==SolveStatus::infeasible); REQUIRE(r.verification.passed);
+    REQUIRE(verify_infeasibility(m,r.certificate).passed);
+}
+TEST_CASE("LP reports unbounded only with a verified feasible point and recession ray", "[lp]") {
+    const auto m=make_lp({-1,0},{{"x"},{"y"}},{{"r",0,0}},{{0,0,1},{0,1,-1}});
+    const auto r=solve_lp(m); INFO(r.message);
+    REQUIRE(r.status==SolveStatus::unbounded); REQUIRE(r.verification.passed);
+    REQUIRE(verify_unboundedness(m,r.primal,r.ray).passed);
+}
+TEST_CASE("LP removes redundant phase I artificial basics safely", "[lp]") {
+    optimal(make_lp({1,2},{{"x"},{"y"}},{{"a",1,1},{"b",2,2},{"zero",0,0}},{{0,0,1},{0,1,1},{1,0,2},{1,1,2}}),1);
+}
+TEST_CASE("Bland pricing terminates the classical cycling example", "[lp][regression]") {
+    optimal(make_lp({10,-57,-9,-24},{{"a"},{"b"},{"c"},{"d"}},{{"r1",-infinity,0},{"r2",-infinity,0},{"r3",-infinity,1}},
+        {{0,0,.5},{0,1,-5.5},{0,2,-2.5},{0,3,9},{1,0,.5},{1,1,-1.5},{1,2,-.5},{1,3,1},{2,0,1}},ObjectiveSense::maximize),1);
+}
+TEST_CASE("LP scaling resolves coefficient magnitude differences", "[lp]") {
+    const auto m=make_lp({1,1},{{"x"},{"y"}},{{"a",-infinity,1e-9},{"b",-infinity,2e9}},{{0,0,1e-9},{1,1,1e9}},ObjectiveSense::maximize);
+    const auto r=solve_lp(m); INFO(r.message); REQUIRE(r.status==SolveStatus::optimal); REQUIRE(r.objective==Approx(3));
+}
+TEST_CASE("LP limits cancellation and deterministic trajectories are explicit", "[lp]") {
+    auto m=read_mps_file(std::string(SOVEREIGN_SOURCE_DIR)+"/examples/small_lp.mps");
+    SolverOptions o; o.iteration_limit=1; REQUIRE(solve_lp(m,o).status==SolveStatus::iteration_limit);
+    o={}; o.cancelled=[] {return true;}; REQUIRE(solve_lp(m,o).status==SolveStatus::cancelled);
+    std::vector<std::string> first,second;
+    o={}; o.telemetry=[&](const auto& e){first.push_back(e.type+e.detail);}; const auto a=solve_lp(m,o);
+    o.telemetry=[&](const auto& e){second.push_back(e.type+e.detail);}; const auto b=solve_lp(m,o);
+    REQUIRE(a.primal==b.primal); REQUIRE(a.iterations==b.iterations); REQUIRE(first==second);
+}
+TEST_CASE("Small LP regression bank agrees with independent vertex enumeration", "[lp][benchmark]") {
+    std::mt19937 rng(7123);
+    for (int sample=0;sample<30;++sample) {
+        const double a=1+rng()%7, b=1+rng()%7, cap=1+rng()%20, cx=1+rng()%9, cy=1+rng()%9;
+        const double ux=1+rng()%7, uy=1+rng()%7;
+        auto m=make_lp({cx,cy},{{"x",0,ux},{"y",0,uy}},{{"capacity",-infinity,cap}},{{0,0,a},{0,1,b}},ObjectiveSense::maximize);
+        double expected=0;
+        for (auto [x,y] : std::vector<std::pair<double,double>>{{0,0},{ux,0},{0,uy},{ux,uy},{cap/a,0},{0,cap/b},{ux,(cap-a*ux)/b},{(cap-b*uy)/a,uy}})
+            if (x>=0 && y>=0 && x<=ux && y<=uy && a*x+b*y<=cap+1e-10) expected=std::max(expected,cx*x+cy*y);
+        const auto result=solve_lp(m); INFO(sample); INFO(result.message);
+        REQUIRE(result.status==SolveStatus::optimal); REQUIRE(result.objective==Approx(expected).margin(1e-6));
+    }
+}
+TEST_CASE("Tiny nonzero redundant-row candidates never certify false unboundedness", "[lp][regression]") {
+    const auto m=make_lp({0,-1,0},{{"x"},{"y"},{"z",-infinity,infinity}},{{"a",0,0},{"b",0,0},{"c",0,0}},
+        {{0,0,1},{1,0,1},{1,1,1e-13},{2,1,1},{2,2,1}});
+    for (bool scale : {false,true}) {
+        SolverOptions o; o.scaling=scale; const auto r=solve_lp(m,o);
+        REQUIRE(r.status!=SolveStatus::unbounded); REQUIRE(r.status!=SolveStatus::infeasible);
+        if (r.status==SolveStatus::optimal) REQUIRE(r.objective==Approx(0).margin(1e-10));
+    }
+}
+TEST_CASE("Small objective scale does not turn an unbounded LP into an optimum", "[lp][regression]") {
+    const auto m=make_lp({-1e-9},{{"x"}}, {},{});
+    const auto r=solve_lp(m); INFO(r.message); REQUIRE(r.status==SolveStatus::unbounded);
+}
+TEST_CASE("Phase I does not claim infeasibility from small free-variable residuals", "[lp][regression]") {
+    const auto m=make_lp({0,0,0},{{"x",-infinity,infinity},{"y"},{"z",-infinity,infinity}},
+        {{"a",1,infinity},{"b",-infinity,0},{"c",0,0}},{{0,1,1},{0,0,1e-9},{1,1,1},{2,0,1},{2,2,1}});
+    const auto r=solve_lp(m); INFO(r.message); REQUIRE(r.status!=SolveStatus::infeasible);
+}

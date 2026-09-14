@@ -1,0 +1,15 @@
+# Strict flat YAML scalar subset.
+log_level: info
+mps_format: free
+max_line_length: 1048576
+max_entries: 10000000
+branching: most_fractional
+time_limit: 300
+node_limit: 10000
+iteration_limit: 100000
+mip_gap: 0
+scaling: true
+presolve: true
+cuts: true
+rounding: true
+deterministic: true

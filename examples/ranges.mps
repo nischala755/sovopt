@@ -1,0 +1,20 @@
+* Hand-counted: 2 variables, 3 rows, 4 matrix nonzeros; 2 ranged, 1 equality.
+NAME RANGES_EXAMPLE
+ROWS
+ N COST
+ L WINDOW
+ E TARGET
+ E FIXEDROW
+COLUMNS
+ x COST -1 WINDOW 1
+ x TARGET 2
+ y WINDOW 1 FIXEDROW 1
+RHS
+ rhs WINDOW 8 TARGET 3
+ rhs FIXEDROW 2 COST -5
+RANGES
+ rng WINDOW 6 TARGET -2
+BOUNDS
+ FR b x
+ FX b y 2
+ENDATA

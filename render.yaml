@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: sovereign-optimizer
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: MISTRAL_API_KEY
+        sync: false
+      - key: SOVEREIGN_MAX_ACTIVE_JOBS
+        value: "2"
+      - key: SOVEREIGN_MAX_UPLOAD_BYTES
+        value: "10485760"

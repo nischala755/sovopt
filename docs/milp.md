@@ -1,0 +1,13 @@
+# Mixed-integer solver
+
+`solve_mip(model, options)` runs deterministic best-bound branch-and-bound over the shared CPU revised-simplex LP relaxation. All objectives and queue bounds are normalized internally to minimization, including the objective offset; reported bounds use the original sense. A node's inherited bound remains available while its LP or rounding repair is interrupted. Open nodes are ordered by normalized bound, then monotonically assigned node ID.
+
+Only independently verified LP optimality bounds and infeasibility certificates justify pruning. Incumbents are rounded on integer coordinates and checked against the original model, including original variable types. The optional repair heuristic fixes integer coordinates and solves an LP for continuous coordinates. Both node and heuristic LP iterations count toward one global budget. A nearly integral point that fails rounding verification is branched on any remaining positive fractional part; it is never silently discarded.
+
+`most_fractional` selects the largest distance to the nearest integer, with column order breaking ties. `pseudocost` learns separate up/down objective gains per unit movement from solved children; unobserved directions use unit cost. No external optimization engine is used.
+
+The initial cut pass tightens finite bounds of rows containing exclusively integer variables and exactly integral coefficients of magnitude at most 2^53. Upper bounds are floored and lower bounds ceiled after one outward floating-point ULP guard. The strengthened row bounds are actually used in every relaxation. This deliberately small cut framework does not implement Gomory/MIR separation.
+
+Time, cancellation, LP iteration, and node limits return the incumbent if available and the best remaining bound. An absent incumbent has an empty primal vector and infinite objective. Relative gap is `(normalized incumbent - normalized bound) / max(1, abs(incumbent))`. A positive requested gap can stop before exhaustive proof. LP unboundedness alone is insufficient: an original-model integer-feasible base and integral improving recession direction must pass independent verification, otherwise the result is `numerical_failure` with an explanation.
+
+Counters include processed/generated nodes, aggregate LP iterations, incumbent updates, applied cut sides, wall time and CPU time. Telemetry emits MIP start/completion, node creation/solution/pruning, incumbent updates and cut generation with objective, bound and gap. Cold LP solves and copied node models favor auditability over large-instance performance; there is no basis warm start, parallel search or claim of industrial benchmark parity.
