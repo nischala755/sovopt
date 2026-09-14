@@ -70,9 +70,10 @@ SolveResult solve_mip(const Model& original,const SolverOptions& options) {
     };
     Model root=original;
     for(auto& v:root.variables) if(v.type==VariableType::binary) { v.lower=std::max(0.0,v.lower); v.upper=std::min(1.0,v.upper); }
-    if(options.cuts) r.cuts_added=apply_integer_row_cuts(root);
+    CutStatistics cut_stats;
+    if(options.cuts) { cut_stats=apply_safe_root_cuts(root);r.cuts_added=cut_stats.integer_rounding+cut_stats.cover+cut_stats.clique; }
     open.push({std::move(root)}); r.nodes_generated=1; emit("MIP_STARTED"); emit("NODE_CREATED","0");
-    if(r.cuts_added) emit("CUT_GENERATED",std::to_string(r.cuts_added)+" integer row bound cuts");
+    if(r.cuts_added) emit("CUT_GENERATED","rounding="+std::to_string(cut_stats.integer_rounding)+" cover="+std::to_string(cut_stats.cover)+" clique="+std::to_string(cut_stats.clique));
     const Index n=original.variables.size(); std::vector<double> upsum(n),downsum(n); std::vector<Index> upcount(n),downcount(n);
     while(!open.empty()) {
         r.status=limit(); if(r.status!=SolveStatus::optimal) return finish();

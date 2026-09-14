@@ -2,6 +2,7 @@
 #include <catch2/catch_approx.hpp>
 #include <sovereign/mip.hpp>
 #include <sovereign/verification.hpp>
+#include <sovereign/cuts.hpp>
 #include <iostream>
 #include <random>
 using namespace sovereign;
@@ -77,4 +78,9 @@ TEST_CASE("Mixed-integer maximization normalizes continuous LP bounds", "[mip][r
     REQUIRE(result.objective==Catch::Approx(3.5));
     REQUIRE(result.primal[0]==Catch::Approx(2));
     REQUIRE(result.primal[1]==Catch::Approx(0.5));
+}
+TEST_CASE("Safe cover and clique cuts exclude only impossible binary combinations","[mip][cuts]") {
+ auto m=example({1,1,1},{{"a",0,1,VariableType::binary},{"b",0,1,VariableType::binary},{"c",0,1,VariableType::binary}},{{"capacity",-infinity,3}},{{0,0,2},{0,1,2},{0,2,1}});
+ const auto stats=apply_safe_root_cuts(m);REQUIRE(stats.cover>=1);REQUIRE(stats.clique>=1);
+ const auto r=run(m);REQUIRE(r.status==SolveStatus::optimal);REQUIRE(r.objective==Catch::Approx(2));REQUIRE(r.verification.passed);
 }

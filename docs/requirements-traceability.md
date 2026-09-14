@@ -16,8 +16,8 @@ Evidence date: 2026-09-14. Status reflects executable behavior, not class names.
 | Algorithms | Interior-point method | PARTIALLY IMPLEMENTED | Genuine infeasible-start primal-dual LP/QP path with residual verification; sparse KKT factorization and certificates remain |
 | Algorithms | First-order method | PARTIALLY IMPLEMENTED | Experimental non-authoritative CPU/CUDA workload |
 | Algorithms | Branch-and-bound | IMPLEMENTED | Deterministic best-bound queue and verified pruning |
-| Algorithms | Branch-and-cut | PARTIALLY IMPLEMENTED | Safe integer-row strengthening only |
-| Algorithms | Cuts | PARTIALLY IMPLEMENTED | No Gomory, MIR, cover or clique separators |
+| Algorithms | Branch-and-cut | PARTIALLY IMPLEMENTED | Safe integer-row strengthening plus binary knapsack cover and conflict-clique cuts |
+| Algorithms | Cuts | PARTIALLY IMPLEMENTED | Cover and clique separators implemented for provably valid binary nonnegative rows; general Gomory and MIR remain absent |
 | Algorithms | Presolve | PARTIALLY IMPLEMENTED | Fixed, constant and singleton reductions with reconstruction |
 | Algorithms | Heuristics | PARTIALLY IMPLEMENTED | Rounding and fixed-integer LP repair |
 | Algorithms | Node selection | IMPLEMENTED | Deterministic best-bound selection |

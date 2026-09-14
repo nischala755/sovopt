@@ -36,7 +36,8 @@
 
 - Dual simplex and a real algorithm-selecting `auto` method.
 - Authoritative multicore LP/MILP, sparse LU update schemes, strong branching,
-  Gomory/MIR/cover cuts, feasibility pump and tree restart/persistence.
+  general Gomory/MIR cuts, feasibility pump and tree restart/persistence. Safe
+  binary knapsack cover and conflict-clique separators are implemented.
 - Sparse large-scale QP KKT factorization, QP file import, infeasibility and
   unboundedness certificates, and Flight Recorder QP schemas. Optimal QP KKT
   certificates now use original-model row and variable coordinates.
