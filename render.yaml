@@ -4,6 +4,7 @@ services:
     runtime: docker
     dockerfilePath: ./Dockerfile
     plan: free
+    autoDeployTrigger: off
     healthCheckPath: /health
     envVars:
       - key: MISTRAL_API_KEY

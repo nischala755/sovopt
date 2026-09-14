@@ -7,6 +7,7 @@
 [![Tests](https://img.shields.io/badge/native%20tests-93%20passing-2ea44f)](#verification)
 [![Python](https://img.shields.io/badge/Python%20tests-7%20passing-2ea44f)](#verification)
 [![Solver](https://img.shields.io/badge/external%20solver-none-ffb84d)](#trust-boundary)
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https%3A%2F%2Fgithub.com%2Fnischala755%2Fsovopt)
 
 An independent C++20 mathematical optimization engine with sparse model import,
 presolve, two-phase revised simplex, independently checked numerical certificates,
