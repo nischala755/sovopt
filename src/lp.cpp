@@ -54,6 +54,8 @@ SimplexState simplex(detail::StandardForm& f,std::span<const double> cost,bool p
     std::deque<std::string> basis_history;
     std::set<std::string> known_bases;
     bool anti_cycling=false;
+    UpdatedBasis basis(f.matrix,f.basis,tol.pivot,32);
+    run.emit("FACTORIZATION","basis dimension="+std::to_string(f.basis.size()));
     while (true) {
         const auto limit=run.limit(); if (limit!=SolveStatus::optimal) return {limit,{},{},{},0};
         const auto signature=basis_signature(f.basis);
@@ -63,15 +65,9 @@ SimplexState simplex(detail::StandardForm& f,std::span<const double> cost,bool p
         }
         basis_history.push_back(signature);
         if (basis_history.size()>256) { known_bases.erase(basis_history.front()); basis_history.pop_front(); }
-        SparseBasis basis(f.matrix,f.basis,tol.pivot);
-        run.emit("FACTORIZATION","basis dimension="+std::to_string(basis.dimension())+" nnz="+std::to_string(basis.nonzeros()));
         auto xb=basis.solve(f.rhs);
-        if (basis.last_solve_info().refinements)
-            run.emit("REFINEMENT","forward passes="+std::to_string(basis.last_solve_info().refinements));
         std::vector<double> cb; for (auto j : f.basis) cb.push_back(cost[j]);
         auto dual=basis.solve_transpose(cb);
-        if (basis.last_solve_info().refinements)
-            run.emit("REFINEMENT","transpose passes="+std::to_string(basis.last_solve_info().refinements));
         std::vector<bool> basic(f.matrix.columns(),false); for (auto j : f.basis) basic[j]=true;
         std::vector<double> primal(f.matrix.columns(),0);
         for (Index i=0;i<xb.size();++i) {
@@ -119,18 +115,23 @@ SimplexState simplex(detail::StandardForm& f,std::span<const double> cost,bool p
             return {SolveStatus::unbounded,std::move(primal),std::move(dual),std::move(ray),0};
         }
         run.emit("RATIO_TEST","harris step="+std::to_string(step)+" pivot="+std::to_string(largest_pivot));
-        const auto old=f.basis[leaving]; f.basis[leaving]=entering; ++run.iterations;
+        const auto old=f.basis[leaving];
+        const auto prior_refactorizations=basis.refactorizations();
+        basis.replace(leaving,entering);
+        f.basis[leaving]=entering; ++run.iterations;
+        if (basis.refactorizations()!=prior_refactorizations)
+            run.emit("REFACTORIZATION","product-form update limit or numerical pivot guard");
         run.emit("LP_ITERATION",std::string(phase_one ? "phase_I " : "phase_II ")+std::to_string(old)+" -> "+std::to_string(entering));
     }
 }
 SimplexState dual_simplex(detail::StandardForm&f,std::span<const double>cost,Run&run){
- const auto&tol=run.options.tolerances;run.emit("DUAL_SIMPLEX_STARTED");
- while(true){const auto limit=run.limit();if(limit!=SolveStatus::optimal)return {limit,{},{},{},0};SparseBasis basis(f.matrix,f.basis,tol.pivot);auto xb=basis.solve(f.rhs);std::vector<double>cb;for(auto j:f.basis)cb.push_back(cost[j]);auto dual=basis.solve_transpose(cb);std::vector<bool>basic(f.matrix.columns(),false);for(auto j:f.basis)basic[j]=true;std::vector<double>reduced(f.matrix.columns());for(Index j=0;j<f.matrix.columns();++j)if(!basic[j]){reduced[j]=cost[j]-dot_column(f.matrix,j,dual);if(reduced[j]<-tol.dual*(1+std::abs(cost[j])))throw NumericalError("warm basis is not dual feasible");}
+ const auto&tol=run.options.tolerances;run.emit("DUAL_SIMPLEX_STARTED");UpdatedBasis basis(f.matrix,f.basis,tol.pivot,32);run.emit("FACTORIZATION","dual-simplex basis dimension="+std::to_string(f.basis.size()));
+ while(true){const auto limit=run.limit();if(limit!=SolveStatus::optimal)return {limit,{},{},{},0};auto xb=basis.solve(f.rhs);std::vector<double>cb;for(auto j:f.basis)cb.push_back(cost[j]);auto dual=basis.solve_transpose(cb);std::vector<bool>basic(f.matrix.columns(),false);for(auto j:f.basis)basic[j]=true;std::vector<double>reduced(f.matrix.columns());for(Index j=0;j<f.matrix.columns();++j)if(!basic[j]){reduced[j]=cost[j]-dot_column(f.matrix,j,dual);if(reduced[j]<-tol.dual*(1+std::abs(cost[j])))throw NumericalError("warm basis is not dual feasible");}
   Index leaving=f.basis.size();for(Index i=0;i<xb.size();++i)if(xb[i]<-tol.primal*(1+std::abs(f.rhs[i]))&&(leaving==f.basis.size()||f.basis[i]<f.basis[leaving]))leaving=i;
   if(leaving==f.basis.size()){std::vector<double>primal(f.matrix.columns());for(Index i=0;i<xb.size();++i)primal[f.basis[i]]=std::max(0.0,xb[i]);double obj=0;for(Index j=0;j<cost.size();++j)obj=std::fma(cost[j],primal[j],obj);run.emit("DUAL_SIMPLEX_COMPLETED");return {SolveStatus::optimal,std::move(primal),std::move(dual),{},obj};}
   std::vector<double>unit(f.basis.size());unit[leaving]=1;const auto row=basis.solve_transpose(unit);Index entering=f.matrix.columns();double best=infinity;
   for(Index j=0;j<f.matrix.columns();++j)if(!basic[j]&&!f.artificial[j]){const double a=dot_column(f.matrix,j,row);if(a<-tol.pivot){const double ratio=reduced[j]/(-a);if(ratio<best-tol.dual||(std::abs(ratio-best)<=tol.dual&&j<entering)){best=ratio;entering=j;}}}
-  if(entering==f.matrix.columns())throw NumericalError("dual simplex detected primal infeasibility; cold Phase I required");const auto old=f.basis[leaving];f.basis[leaving]=entering;++run.iterations;run.emit("DUAL_SIMPLEX_ITERATION",std::to_string(old)+" -> "+std::to_string(entering));
+  if(entering==f.matrix.columns())throw NumericalError("dual simplex detected primal infeasibility; cold Phase I required");const auto old=f.basis[leaving];const auto prior=basis.refactorizations();basis.replace(leaving,entering);f.basis[leaving]=entering;++run.iterations;if(basis.refactorizations()!=prior)run.emit("REFACTORIZATION","dual-simplex product-form update limit or numerical pivot guard");run.emit("DUAL_SIMPLEX_ITERATION",std::to_string(old)+" -> "+std::to_string(entering));
  }
 }
 void remove_artificials(detail::StandardForm& f,Run& run) {

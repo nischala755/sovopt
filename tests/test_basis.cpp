@@ -77,3 +77,30 @@ TEST_CASE("Sparse basis reports refined forward and transpose residuals", "[basi
         REQUIRE(std::abs(transpose[i]-expected[i]) <= 1e-8);
     }
 }
+
+TEST_CASE("Updated sparse basis applies eta updates to forward and transpose solves", "[basis][updates]") {
+    const auto a=CscMatrix::from_triplets(3,5,{{0,0,1},{1,1,1},{2,2,1},{0,3,2},{1,3,1},{1,4,3},{2,4,2}});
+    UpdatedBasis basis(a,{0,1,2},1e-12,8);
+    basis.replace(0,3);
+    basis.replace(2,4);
+    const std::vector<double> rhs={5,7,11};
+    const auto x=basis.solve(rhs);
+    const auto xt=basis.solve_transpose(rhs);
+    const SparseBasis direct(a,std::vector<Index>{3,1,4});
+    const auto expected=direct.solve(rhs);
+    const auto expected_t=direct.solve_transpose(rhs);
+    REQUIRE(x.size()==expected.size());
+    for(Index i=0;i<x.size();++i) REQUIRE(std::abs(x[i]-expected[i]) <= 1e-11);
+    for(Index i=0;i<xt.size();++i) REQUIRE(std::abs(xt[i]-expected_t[i]) <= 1e-11);
+    REQUIRE(basis.update_count()==2);
+    REQUIRE(basis.refactorizations()==1);
+}
+
+TEST_CASE("Updated sparse basis refactorizes at its update limit and rejects weak pivots", "[basis][updates]") {
+    const auto a=CscMatrix::from_triplets(2,4,{{0,0,1},{1,1,1},{0,2,1},{1,2,1},{0,3,1e-15},{1,3,1}});
+    UpdatedBasis basis(a,{0,1},1e-12,1);
+    basis.replace(0,2);
+    REQUIRE(basis.update_count()==0);
+    REQUIRE(basis.refactorizations()==2);
+    REQUIRE_THROWS_AS(basis.replace(0,3),NumericalError);
+}

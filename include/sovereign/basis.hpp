@@ -1,6 +1,7 @@
 #pragma once
 #include <sovereign/sparse_matrix.hpp>
 #include <map>
+#include <memory>
 #include <stdexcept>
 
 namespace sovereign {
@@ -33,5 +34,31 @@ private:
     void validate_rhs(std::span<const double> rhs) const;
     [[nodiscard]] std::vector<double> solve_factors(std::span<const double> rhs) const;
     [[nodiscard]] std::vector<double> solve_transpose_factors(std::span<const double> rhs) const;
+};
+
+// Product-form inverse basis. A stable sparse LU factorization is retained as
+// the base and accepted pivots are represented by eta matrices until the
+// controlled refactorization limit is reached.
+class UpdatedBasis {
+public:
+    UpdatedBasis(const CscMatrix& matrix, std::vector<Index> basis_columns,
+                 double pivot_tolerance = 1e-12, Index update_limit = 32);
+    [[nodiscard]] std::vector<double> solve(std::span<const double> rhs) const;
+    [[nodiscard]] std::vector<double> solve_transpose(std::span<const double> rhs) const;
+    void replace(Index position, Index entering_column);
+    [[nodiscard]] const std::vector<Index>& columns() const noexcept { return columns_; }
+    [[nodiscard]] Index update_count() const noexcept { return etas_.size(); }
+    [[nodiscard]] Index refactorizations() const noexcept { return refactorizations_; }
+private:
+    struct Eta { Index position; std::vector<double> column; };
+    const CscMatrix* matrix_;
+    std::vector<Index> columns_;
+    double pivot_tolerance_;
+    Index update_limit_;
+    Index refactorizations_ = 0;
+    std::unique_ptr<SparseBasis> base_;
+    std::vector<Eta> etas_;
+    void refactorize();
+    [[nodiscard]] std::vector<double> matrix_column(Index column) const;
 };
 }

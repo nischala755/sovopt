@@ -45,3 +45,10 @@ After compatible-basis inheritance and dual-simplex repair, a fresh pseudocost
 bound 1176026.6666666665 and no incumbent in 7.93 seconds. The failure remains:
 basis reuse without sparse factor updates and stronger incumbent generation is
 insufficient for this instance.
+
+After adding product-form inverse basis updates with a 32-pivot controlled
+refactorization interval, the same Release executable and pseudocost settings
+processed 363 nodes in 2.90 solver seconds (3.03 seconds harness wall time). It
+still reached 100,000 LP iterations without an incumbent; the reported bound was
+1181497.4999999998. This is a measured throughput improvement, not a claim that
+the MIPLIB reliability target is complete.

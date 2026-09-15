@@ -180,4 +180,76 @@ Index SparseBasis::nonzeros() const noexcept {
     for (const auto& row : factors_) count += row.size();
     return count;
 }
+
+UpdatedBasis::UpdatedBasis(const CscMatrix& matrix, std::vector<Index> basis_columns,
+                           double pivot_tolerance, Index update_limit)
+    : matrix_(&matrix), columns_(std::move(basis_columns)),
+      pivot_tolerance_(pivot_tolerance), update_limit_(update_limit) {
+    if (!std::isfinite(pivot_tolerance_) || pivot_tolerance_ <= 0)
+        throw NumericalError("Basis pivot tolerance must be finite and positive");
+    if (update_limit_ == 0) throw NumericalError("Basis update limit must be positive");
+    refactorize();
+}
+
+std::vector<double> UpdatedBasis::matrix_column(Index column) const {
+    if (column >= matrix_->columns()) throw NumericalError("Entering basis column is out of range");
+    std::vector<double> result(matrix_->rows(), 0.0);
+    const auto sparse = matrix_->column(column);
+    for (Index k = 0; k < sparse.rows.size(); ++k) result[sparse.rows[k]] = sparse.values[k];
+    return result;
+}
+
+void UpdatedBasis::refactorize() {
+    base_ = std::make_unique<SparseBasis>(*matrix_, columns_, pivot_tolerance_);
+    etas_.clear();
+    ++refactorizations_;
+}
+
+std::vector<double> UpdatedBasis::solve(std::span<const double> rhs) const {
+    auto result = base_->solve(rhs);
+    for (const auto& eta : etas_) {
+        const double pivot = eta.column[eta.position];
+        const double pivot_value = finite(result[eta.position] / pivot);
+        for (Index i = 0; i < result.size(); ++i) {
+            if (i != eta.position)
+                result[i] = finite(result[i] - finite(eta.column[i] * pivot_value));
+        }
+        result[eta.position] = pivot_value;
+    }
+    return result;
+}
+
+std::vector<double> UpdatedBasis::solve_transpose(std::span<const double> rhs) const {
+    std::vector<double> work(rhs.begin(), rhs.end());
+    if (work.size() != columns_.size())
+        throw NumericalError("Basis right-hand side has incorrect dimension");
+    for (const double value : work) (void)finite(value);
+    for (auto it = etas_.rbegin(); it != etas_.rend(); ++it) {
+        double value = work[it->position];
+        for (Index i = 0; i < work.size(); ++i) {
+            if (i != it->position) value = finite(value - finite(it->column[i] * work[i]));
+        }
+        work[it->position] = finite(value / it->column[it->position]);
+    }
+    return base_->solve_transpose(work);
+}
+
+void UpdatedBasis::replace(Index position, Index entering_column) {
+    if (position >= columns_.size()) throw NumericalError("Basis replacement position is out of range");
+    (void)matrix_column(entering_column); // validates before changing any state
+    for (Index i = 0; i < columns_.size(); ++i) {
+        if (i != position && columns_[i] == entering_column)
+            throw NumericalError("Basis replacement would create duplicate columns");
+    }
+    auto direction = solve(matrix_column(entering_column));
+    if (std::abs(direction[position]) <= pivot_tolerance_ && !etas_.empty()) {
+        refactorize();
+        direction = solve(matrix_column(entering_column));
+    }
+    if (!std::isfinite(direction[position]) || std::abs(direction[position]) <= pivot_tolerance_)
+        throw NumericalError("Singular or numerically small basis update pivot");
+    columns_[position] = entering_column;
+    etas_.push_back({position, std::move(direction)});
+    if (etas_.size() >= update_limit_) refactorize();
+}
 }

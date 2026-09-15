@@ -24,8 +24,10 @@ Phase I adds one artificial variable per row and minimizes their sum. Revised
 simplex computes the basic solution by solving `B x_B = b`, dual prices from
 `B^T y = c_B`, and reduced costs `c_j - a_j^T y`. Bland's first eligible entering
 column and a deterministic minimum-ratio test prevent classical cycling. Every
-pivot refactorizes the sparse basis; this is intentionally conservative and is
-not a performance claim. Phase I removes zero artificial basics only after an
+pivot updates a product-form inverse with an eta matrix. The solver performs a
+fresh sparse LU after 32 accepted updates, or before rejecting a weak update
+pivot, so numerical drift cannot grow without a controlled refactorization.
+Phase I removes zero artificial basics only after an
 exact-zero dependency check. A small nonzero candidate below the pivot threshold
 causes numerical failure, never row deletion.
 
@@ -36,9 +38,11 @@ fall back to the cold two-phase path. Every repair pivot consumes the ordinary
 iteration and time budgets and produces telemetry.
 
 `SparseBasis` stores LU factors as sparse ordered rows with partial row pivoting.
-It never allocates a dense square matrix. The current implementation refactorizes
-after each pivot; eta updates and Forrest–Tomlin updates are future performance
-work. Phase II excludes artificial variables, optimizes the original objective,
+It never allocates a dense square matrix. `UpdatedBasis` retains that factorization
+and applies product-form eta solves in forward order and transpose solves in
+reverse order. Controlled refactorization occurs after 32 updates. Production
+sparse-LU updates such as Forrest-Tomlin remain future performance work. Phase II
+excludes artificial variables, optimizes the original objective,
 and returns a primal point plus dual multipliers or an improving recession ray.
 
 ## Certificates and numerical policy

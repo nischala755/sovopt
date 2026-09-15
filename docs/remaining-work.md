@@ -5,7 +5,8 @@
 - C++20 foundation, sparse CSC, model validation, MPS, presolve and scaling.
 - Two-phase primal revised simplex with Harris two-pass ratio selection,
   deterministic Bland pricing, bounded basis-history detection, residual-based
-  basis refinement, and original-model verification.
+  basis refinement, product-form inverse updates with controlled sparse-LU
+  refactorization, and original-model verification.
 - Verified Netlib AFIRO, SC50A and SC50B regressions.
 - Small-model MILP branch-and-bound, branching, bounds, limits, rounding and a
   safe cut framework.
@@ -36,7 +37,7 @@
 
 - General standalone dual-simplex selection and certificates. Compatible MILP
   child bases already use dual-simplex reoptimization with cold fallback.
-- Authoritative multicore LP/MILP, sparse LU update schemes, general Gomory/MIR
+- Authoritative multicore LP/MILP, Forrest-Tomlin sparse LU updates, general Gomory/MIR
   cuts, feasibility pump and tree restart/persistence. Bounded strong branching
   with real child LP probes and safe
   binary knapsack cover and conflict-clique separators are implemented.
