@@ -7,6 +7,8 @@
 #include <cmath>
 #include <ctime>
 #include <queue>
+#include <set>
+#include <sstream>
 namespace sovereign {
 namespace {
 struct Node {
@@ -30,6 +32,49 @@ double lattice_bound(const Model& m,double reported) {
     const double sign=m.sense==ObjectiveSense::minimize?1:-1;
     const double shifted=std::nextafter(sign*reported-sign*m.objective_offset,-infinity);
     return sign*m.objective_offset+std::ceil(shifted);
+}
+std::string unused_name(const std::set<std::string>& used,const std::string& stem) {
+    if(!used.contains(stem)) return stem;
+    for(Index suffix=1;;++suffix) {
+        const auto candidate=stem+"_"+std::to_string(suffix);
+        if(!used.contains(candidate)) return candidate;
+    }
+}
+Model distance_projection(const Model& source,std::span<const double> target,
+                          std::span<const Index> discrete) {
+    Model projected=source;
+    projected.name=source.name+" feasibility-pump projection";
+    projected.sense=ObjectiveSense::minimize;
+    projected.objective_offset=0;
+    projected.objective.assign(source.variables.size()+discrete.size(),0.0);
+    std::set<std::string> variable_names,row_names;
+    for(const auto& variable:source.variables) variable_names.insert(variable.name);
+    for(const auto& row:source.constraints) row_names.insert(row.name);
+    std::vector<Triplet> entries;
+    entries.reserve(source.matrix.nonzeros()+4*discrete.size());
+    for(Index j=0;j<source.matrix.columns();++j) {
+        const auto column=source.matrix.column(j);
+        for(Index k=0;k<column.rows.size();++k) entries.push_back({column.rows[k],j,column.values[k]});
+    }
+    for(Index k=0;k<discrete.size();++k) {
+        const Index j=discrete[k],d=source.variables.size()+k;
+        const auto variable_name=unused_name(variable_names,"__fp_distance_"+std::to_string(j));
+        variable_names.insert(variable_name);
+        projected.variables.push_back({variable_name,0,infinity,VariableType::continuous});
+        projected.objective[d]=1;
+        const Index positive=projected.constraints.size();
+        const auto positive_name=unused_name(row_names,"__fp_positive_"+std::to_string(j));
+        row_names.insert(positive_name);
+        projected.constraints.push_back({positive_name,-infinity,target[j]});
+        entries.push_back({positive,j,1}); entries.push_back({positive,d,-1});
+        const Index negative=projected.constraints.size();
+        const auto negative_name=unused_name(row_names,"__fp_negative_"+std::to_string(j));
+        row_names.insert(negative_name);
+        projected.constraints.push_back({negative_name,-infinity,-target[j]});
+        entries.push_back({negative,j,-1}); entries.push_back({negative,d,-1});
+    }
+    projected.matrix=CscMatrix::from_triplets(projected.constraints.size(),projected.variables.size(),std::move(entries));
+    return projected;
 }
 }
 SolveResult solve_mip(const Model& original,const SolverOptions& options) {
@@ -68,6 +113,39 @@ SolveResult solve_mip(const Model& original,const SolverOptions& options) {
         if(!v.passed) return false;
         if(!have_incumbent||sign*value<incumbent) { have_incumbent=true; incumbent=sign*value; r.primal=std::move(x); r.objective=value; r.verification=std::move(v); ++r.incumbent_updates; emit("INCUMBENT_UPDATED"); }
         return true;
+    };
+    auto feasibility_pump=[&](const Model& node_model,const std::vector<double>& relaxation) {
+        std::vector<Index> discrete;
+        for(Index j=0;j<original.variables.size();++j)
+            if(original.variables[j].type!=VariableType::continuous) discrete.push_back(j);
+        if(discrete.empty()) return false;
+        emit("FEASIBILITY_PUMP_STARTED","passes="+std::to_string(options.feasibility_pump_passes));
+        std::vector<double> current=relaxation,target=relaxation;
+        std::set<std::string> seen;
+        for(Index pass=0;pass<options.feasibility_pump_passes&&limit()==SolveStatus::optimal;++pass) {
+            std::ostringstream signature;
+            for(const Index j:discrete) {
+                target[j]=std::clamp(std::round(current[j]),std::ceil(node_model.variables[j].lower),std::floor(node_model.variables[j].upper));
+                signature<<target[j]<<',';
+            }
+            if(!seen.insert(signature.str()).second) {
+                const Index j=discrete[pass%discrete.size()];
+                double alternative=target[j]>=current[j]?std::floor(current[j]):std::ceil(current[j]);
+                if(alternative==target[j]) alternative=target[j]+(target[j]<node_model.variables[j].upper?1:-1);
+                target[j]=std::clamp(alternative,std::ceil(node_model.variables[j].lower),std::floor(node_model.variables[j].upper));
+                emit("FEASIBILITY_PUMP_PERTURBED","variable="+std::to_string(j));
+            }
+            auto projection=lp(distance_projection(node_model,target,discrete));
+            emit("FEASIBILITY_PUMP_PASS","pass="+std::to_string(pass+1));
+            if(projection.status!=SolveStatus::optimal||!projection.verification.passed) break;
+            current.assign(projection.primal.begin(),projection.primal.begin()+static_cast<std::ptrdiff_t>(original.variables.size()));
+            bool integral=true;
+            for(const Index j:discrete)
+                if(std::abs(current[j]-std::round(current[j]))>options.tolerances.integrality) integral=false;
+            if(integral&&accept(current)) { emit("FEASIBILITY_PUMP_INCUMBENT","pass="+std::to_string(pass+1)); return true; }
+        }
+        emit("FEASIBILITY_PUMP_STOPPED","no verified candidate");
+        return false;
     };
     Model root=original;
     for(auto& v:root.variables) if(v.type==VariableType::binary) { v.lower=std::max(0.0,v.lower); v.upper=std::min(1.0,v.upper); }
@@ -115,6 +193,8 @@ SolveResult solve_mip(const Model& original,const SolverOptions& options) {
             }
             auto repaired=lp(fixed); if(repaired.status==SolveStatus::optimal) accept(repaired.primal);
         }
+        if(options.feasibility_pump&&node.id==0&&!have_incumbent&&limit()==SolveStatus::optimal)
+            (void)feasibility_pump(node.model,relaxation.primal);
         update_bound();
         if(have_incumbent&&r.mip_gap<=options.mip_gap) { r.status=SolveStatus::optimal; r.message="Verified incumbent satisfies requested global MIP gap"; return finish(); }
         Index branch=n; double score=-1;

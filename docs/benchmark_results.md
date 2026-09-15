@@ -52,3 +52,9 @@ processed 363 nodes in 2.90 solver seconds (3.03 seconds harness wall time). It
 still reached 100,000 LP iterations without an incumbent; the reported bound was
 1181497.4999999998. This is a measured throughput improvement, not a claim that
 the MIPLIB reliability target is complete.
+
+Enabling the deterministic eight-pass L1 feasibility pump did not change the
+`flugpl` terminal result: no verified incumbent was found before 100,000 LP
+iterations, with 363 nodes, bound 1181497.4999999998 and 2.83 solver seconds.
+The heuristic is therefore demonstrated on hand-verifiable regressions, but it
+does not resolve this difficult MIPLIB instance.

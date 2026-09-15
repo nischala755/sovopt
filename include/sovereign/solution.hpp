@@ -30,6 +30,8 @@ struct SolverOptions {
     bool deterministic = true;
     bool cuts = true;
     bool rounding = true;
+    bool feasibility_pump = true;
+    Index feasibility_pump_passes = 8;
     std::string branching = "most_fractional";
     Index strong_branching_candidates = 5;
     std::string method = "auto";

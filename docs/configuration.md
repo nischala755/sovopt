@@ -9,7 +9,10 @@ Configuration is opt-in through `--config PATH`. Without it, defaults match
 | `mps_format` | `free` | `free`, `fixed` |
 | `max_line_length` | `1048576` | Positive integer fitting `size_t` |
 | `max_entries` | `10000000` | Positive integer fitting `size_t` |
-| `branching` | `most_fractional` | `most_fractional`, `pseudocost` |
+| `branching` | `most_fractional` | `most_fractional`, `pseudocost`, `strong` |
+| `strong_branching_candidates` | `5` | Positive integer |
+| `feasibility_pump` | `true` | `true`, `false` |
+| `feasibility_pump_passes` | `8` | Positive integer |
 | `time_limit` | `300` | Finite nonnegative seconds |
 | `node_limit` | `10000` | Positive integer |
 | `iteration_limit` | `100000` | Positive integer |

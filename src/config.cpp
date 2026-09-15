@@ -44,11 +44,11 @@ Configuration read_config(std::istream& input) {
         } else if (key == "branching") {
             if(value!="most_fractional"&&value!="pseudocost"&&value!="strong") fail("unsupported branching strategy");
             result.solver.branching=value;
-        } else if (key == "scaling" || key == "presolve" || key == "cuts" || key == "rounding" || key == "deterministic") {
+        } else if (key == "scaling" || key == "presolve" || key == "cuts" || key == "rounding" || key == "feasibility_pump" || key == "deterministic") {
             if(value!="true"&&value!="false") fail("expected true or false");
             const bool enabled=value=="true";
             if(key=="scaling") result.solver.scaling=enabled; else if(key=="presolve") result.solver.presolve=enabled;
-            else if(key=="cuts") result.solver.cuts=enabled; else if(key=="rounding") result.solver.rounding=enabled; else result.solver.deterministic=enabled;
+            else if(key=="cuts") result.solver.cuts=enabled; else if(key=="rounding") result.solver.rounding=enabled; else if(key=="feasibility_pump") result.solver.feasibility_pump=enabled; else result.solver.deterministic=enabled;
         } else if (key == "time_limit" || key == "mip_gap" || key == "primal_tolerance" || key == "dual_tolerance" || key == "integrality_tolerance" || key == "pivot_tolerance") {
             char* end=nullptr; const double number=std::strtod(value.c_str(),&end);
             if(end!=value.c_str()+value.size()||!std::isfinite(number)||number<0) fail("expected finite nonnegative number");
@@ -56,7 +56,7 @@ Configuration read_config(std::istream& input) {
             if(key=="time_limit") result.solver.time_limit_seconds=number; else if(key=="mip_gap") result.solver.mip_gap=number;
             else if(key=="primal_tolerance") result.solver.tolerances.primal=number; else if(key=="dual_tolerance") result.solver.tolerances.dual=number;
             else if(key=="integrality_tolerance") result.solver.tolerances.integrality=number; else result.solver.tolerances.pivot=number;
-        } else if (key == "iteration_limit" || key == "node_limit" || key == "strong_branching_candidates" || key == "max_line_length" || key == "max_entries") {
+        } else if (key == "iteration_limit" || key == "node_limit" || key == "strong_branching_candidates" || key == "feasibility_pump_passes" || key == "max_line_length" || key == "max_entries") {
             Index size = 0;
             const auto parsed = std::from_chars(value.data(),value.data()+value.size(),size);
             if (parsed.ec != std::errc{} || parsed.ptr != value.data()+value.size() || size == 0) fail("expected positive integer");
@@ -64,6 +64,7 @@ Configuration read_config(std::istream& input) {
             else if(key=="max_entries") result.mps.max_entries = size;
             else if(key=="iteration_limit") result.solver.iteration_limit=size;
             else if(key=="strong_branching_candidates") result.solver.strong_branching_candidates=size;
+            else if(key=="feasibility_pump_passes") result.solver.feasibility_pump_passes=size;
             else result.solver.node_limit=size;
         } else fail("unknown key: " + key);
     }

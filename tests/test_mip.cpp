@@ -41,7 +41,7 @@ TEST_CASE("MILP explicit budgets cancellation and preserved bound", "[mip]") {
     o={}; o.time_limit_seconds=0; REQUIRE(run(m,o).status==SolveStatus::time_limit);
     o={}; o.iteration_limit=0; REQUIRE(run(m,o).status==SolveStatus::iteration_limit);
     o={}; o.cancelled=[] { return true; }; REQUIRE(run(m,o).status==SolveStatus::cancelled);
-    o={}; o.node_limit=1; o.rounding=false; o.cuts=false; const auto r=run(m,o);
+    o={}; o.node_limit=1; o.rounding=false; o.feasibility_pump=false; o.cuts=false; const auto r=run(m,o);
     REQUIRE(r.status==SolveStatus::node_limit); REQUIRE(r.best_bound>=1); REQUIRE(r.best_bound<=1.500001); REQUIRE(r.primal.empty());
 }
 TEST_CASE("MILP safe row cuts apply and continuous rows stay unchanged", "[mip]") {
@@ -88,4 +88,17 @@ TEST_CASE("Safe cover and clique cuts exclude only impossible binary combination
  auto m=example({1,1,1},{{"a",0,1,VariableType::binary},{"b",0,1,VariableType::binary},{"c",0,1,VariableType::binary}},{{"capacity",-infinity,3}},{{0,0,2},{0,1,2},{0,2,1}});
  const auto stats=apply_safe_root_cuts(m);REQUIRE(stats.cover>=1);REQUIRE(stats.clique>=1);
  const auto r=run(m);REQUIRE(r.status==SolveStatus::optimal);REQUIRE(r.objective==Catch::Approx(2));REQUIRE(r.verification.passed);
+}
+
+TEST_CASE("Feasibility pump finds and independently verifies an incumbent missed by one-shot rounding","[mip][heuristic]") {
+ auto m=example({1,1},{{"x",0,1,VariableType::binary},{"y",0,1,VariableType::binary}},{{"capacity",-infinity,1.5}},{{0,0,1},{0,1,1}});
+ SolverOptions o;o.cuts=false;o.node_limit=1;o.rounding=true;o.feasibility_pump=true;o.feasibility_pump_passes=4;
+ std::vector<std::string> events;o.telemetry=[&](const auto&e){events.push_back(e.type);};
+ const auto r=run(m,o);
+ REQUIRE(r.status==SolveStatus::optimal);
+ REQUIRE(r.incumbent_updates==1);
+ REQUIRE(r.objective==Catch::Approx(1));
+ REQUIRE(r.verification.passed);
+ REQUIRE(std::find(events.begin(),events.end(),"FEASIBILITY_PUMP_STARTED")!=events.end());
+ REQUIRE(std::find(events.begin(),events.end(),"FEASIBILITY_PUMP_INCUMBENT")!=events.end());
 }

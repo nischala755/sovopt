@@ -76,6 +76,14 @@ verified LP dual bound can prune a node. Incumbents are rounded or repaired by a
 LP with fixed integer coordinates and then checked for original-model feasibility,
 objective consistency and integrality.
 
+At the root node, the deterministic feasibility pump alternates rounding with a
+real auxiliary LP that minimizes the sum of absolute deviations from the integer
+target. Two linear inequalities and one nonnegative deviation variable represent
+each absolute value. Repeated targets trigger a bounded deterministic perturbation.
+All projection pivots consume the global LP iteration and time budgets, and a
+candidate becomes an incumbent only after independent verification against the
+original model. The pass limit is configurable and the heuristic can be disabled.
+
 Branching supports most-fractional and learned up/down pseudo-cost scores. Child
 bounds use floor and ceil of the relaxation point. Pure-integer rows with exactly
 integral coefficients admit safe row-bound strengthening: finite upper bounds are
