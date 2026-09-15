@@ -35,8 +35,9 @@
 ## C. Missing
 
 - Dual simplex and a real algorithm-selecting `auto` method.
-- Authoritative multicore LP/MILP, sparse LU update schemes, strong branching,
-  general Gomory/MIR cuts, feasibility pump and tree restart/persistence. Safe
+- Authoritative multicore LP/MILP, sparse LU update schemes, general Gomory/MIR
+  cuts, feasibility pump and tree restart/persistence. Bounded strong branching
+  with real child LP probes and safe
   binary knapsack cover and conflict-clique separators are implemented.
 - Sparse large-scale QP KKT factorization, QP file import, infeasibility and
   unboundedness certificates, and Flight Recorder QP schemas. Optimal QP KKT
@@ -48,7 +49,7 @@
 
 - A broader Netlib set and successful MIPLIB instances.
 - Large degenerate, ill-conditioned and weak-relaxation cases on pinned hardware.
-- Actual reference-solver comparison with an installed, version-pinned executable.
+- Broader reference-solver comparisons beyond the measured isolated HiGHS 1.15.1 run.
 - Malicious-integrity protection would require signatures; SHA-256 detects changes
   relative to the stored manifest but is not an authenticity signature.
 

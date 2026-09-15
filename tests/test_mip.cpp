@@ -26,6 +26,11 @@ TEST_CASE("MILP hand maximum and binary knapsack", "[mip]") {
     auto k=example({6,10,12},{{"a",0,1,VariableType::binary},{"b",0,1,VariableType::binary},{"c",0,1,VariableType::binary}},{{"capacity",-infinity,5}},{{0,0,1},{0,1,2},{0,2,3}});
     const auto r=run(k); REQUIRE(r.status==SolveStatus::optimal); REQUIRE(r.objective==Catch::Approx(22));
 }
+TEST_CASE("Strong branching performs real LP probes and preserves the verified optimum","[mip][branching]") {
+ auto m=example({9,8,7},{{"a",0,1,VariableType::binary},{"b",0,1,VariableType::binary},{"c",0,1,VariableType::binary}},{{"capacity",-infinity,3}},{{0,0,2},{0,1,2},{0,2,2}});
+ SolverOptions o;o.branching="strong";o.cuts=false;std::vector<std::string>events;o.telemetry=[&](const auto&e){events.push_back(e.type);};const auto r=run(m,o);
+ REQUIRE(r.status==SolveStatus::optimal);REQUIRE(r.objective==Catch::Approx(9));REQUIRE(r.verification.passed);REQUIRE(std::find(events.begin(),events.end(),"STRONG_BRANCH_PROBE")!=events.end());
+}
 TEST_CASE("MILP fractional equality is integer infeasible", "[mip]") {
     const auto m=example({1},{{"x",0,1,VariableType::integer}},{{"equality",1,1}},{{0,0,2}});
     const auto r=run(m); INFO(r.message); REQUIRE(r.status==SolveStatus::infeasible); REQUIRE(r.primal.empty()); REQUIRE(std::isinf(r.objective));

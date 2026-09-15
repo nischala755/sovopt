@@ -1,0 +1,71 @@
+{
+  "schema_version": 1,
+  "platform": "Windows-11-10.0.26200-SP0",
+  "trust_boundary": "Optional reference process; never imported or linked by AstraNiti production targets",
+  "records": [
+    {
+      "label": "REFERENCE",
+      "solver": "HiGHS",
+      "version": "1.15.1",
+      "available": true,
+      "executed": true,
+      "model": "build\\netlib\\afiro.mps",
+      "read_status": "HighsStatus.kOk",
+      "run_status": "HighsStatus.kOk",
+      "model_status": "Optimal",
+      "objective": -464.75314285714285,
+      "wall_seconds": 0.00413799996022135,
+      "simplex_iterations": 6,
+      "mip_nodes": -1,
+      "mip_gap": null
+    },
+    {
+      "label": "REFERENCE",
+      "solver": "HiGHS",
+      "version": "1.15.1",
+      "available": true,
+      "executed": true,
+      "model": "tests\\data\\sc50a.mps",
+      "read_status": "HighsStatus.kOk",
+      "run_status": "HighsStatus.kOk",
+      "model_status": "Optimal",
+      "objective": -64.5750770585645,
+      "wall_seconds": 0.0017594000091776252,
+      "simplex_iterations": 18,
+      "mip_nodes": -1,
+      "mip_gap": null
+    },
+    {
+      "label": "REFERENCE",
+      "solver": "HiGHS",
+      "version": "1.15.1",
+      "available": true,
+      "executed": true,
+      "model": "tests\\data\\sc50b.mps",
+      "read_status": "HighsStatus.kOk",
+      "run_status": "HighsStatus.kOk",
+      "model_status": "Optimal",
+      "objective": -69.99999999999999,
+      "wall_seconds": 0.0017729999963194132,
+      "simplex_iterations": 18,
+      "mip_nodes": -1,
+      "mip_gap": null
+    },
+    {
+      "label": "REFERENCE",
+      "solver": "HiGHS",
+      "version": "1.15.1",
+      "available": true,
+      "executed": true,
+      "model": "build\\netlib\\flugpl.mps",
+      "read_status": "HighsStatus.kOk",
+      "run_status": "HighsStatus.kOk",
+      "model_status": "Optimal",
+      "objective": 1201500.0,
+      "wall_seconds": 0.15559470001608133,
+      "simplex_iterations": 858,
+      "mip_nodes": 89,
+      "mip_gap": 0.0
+    }
+  ]
+}

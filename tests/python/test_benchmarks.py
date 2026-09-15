@@ -3,6 +3,7 @@ from pathlib import Path
 
 from benchmarks.run_suite import load_manifest
 from benchmarks.baselines.run_reference import run_reference
+from benchmarks.baselines.run_highspy import run as run_highspy
 
 
 ROOT = Path(__file__).parents[2]
@@ -40,3 +41,9 @@ def test_reference_adapter_records_exact_real_command(tmp_path):
     assert result["returncode"] == 0
     assert result["objective"] == 12.5
     assert str(model) in result["command"]
+
+def test_highspy_adapter_reports_an_isolated_missing_install(tmp_path):
+    result=run_highspy(tmp_path/"missing.mps",tmp_path/"empty-module-directory")
+    assert result["label"]=="REFERENCE"
+    assert result["executed"] is False
+    assert result["objective"] is None

@@ -4,8 +4,8 @@
 > A from-scratch optimization laboratory built for transparent, sovereign computation.
 
 [![C++20](https://img.shields.io/badge/C%2B%2B-20-00599C)](https://isocpp.org/)
-[![Tests](https://img.shields.io/badge/native%20tests-107%20passing-2ea44f)](#verification)
-[![Python](https://img.shields.io/badge/Python%20tests-12%20passing-2ea44f)](#verification)
+[![Tests](https://img.shields.io/badge/native%20tests-110%20passing-2ea44f)](#verification)
+[![Python](https://img.shields.io/badge/Python%20tests-13%20passing-2ea44f)](#verification)
 [![Solver](https://img.shields.io/badge/external%20solver-none-ffb84d)](#trust-boundary)
 [![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https%3A%2F%2Fgithub.com%2Fnischala755%2Fsovopt)
 
@@ -45,7 +45,7 @@ flowchart LR
 | Engineering dashboard | Model inspection, telemetry, verification and experiment views | Implemented |
 | Recognised benchmarks | Netlib AFIRO, SC50A and SC50B match published optima and pass independent verification | Demonstrated |
 | Broad Netlib/MIPLIB coverage | MIPLIB flugpl currently reaches the iteration limit | In progress |
-| Established-solver performance comparison | Isolated adapter exists; no reference executable was available on the measured host | In progress |
+| Established-solver performance comparison | Isolated HiGHS 1.15.1 comparison for three Netlib LPs and MIPLIB flugpl | Demonstrated |
 | Optimization Flight Recorder | Real solve timeline, certificate, SHA-256 integrity, replay and independent re-verification | Implemented |
 | Challenging large-scale robustness | Current sparse refactorization architecture is not yet an industrial-scale performance result | In progress |
 | GPU acceleration | Real optional CUDA kernels exist; no CUDA hardware/toolkit was available for measurement | Unverified |

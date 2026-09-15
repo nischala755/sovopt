@@ -116,11 +116,29 @@ SolveResult solve_mip(const Model& original,const SolverOptions& options) {
         update_bound();
         if(have_incumbent&&r.mip_gap<=options.mip_gap) { r.status=SolveStatus::optimal; r.message="Verified incumbent satisfies requested global MIP gap"; return finish(); }
         Index branch=n; double score=-1;
+        std::vector<std::pair<double,Index>> fractional;
         for(Index j=0;j<n;++j) if(original.variables[j].type!=VariableType::continuous) {
             const double value=relaxation.primal[j], f=value-std::floor(value); if(!(f>0&&f<1)) continue;
             double s=std::min(f,1-f);
             if(options.branching=="pseudocost") { const double d=f*(downcount[j]?downsum[j]/double(downcount[j]):1),u=(1-f)*(upcount[j]?upsum[j]/double(upcount[j]):1); s=std::min(d,u)+0.1*std::max(d,u); }
+            fractional.push_back({s,j});
             if(s>score) { score=s; branch=j; }
+        }
+        if(options.branching=="strong"&&!fractional.empty()) {
+            std::sort(fractional.begin(),fractional.end(),[](const auto&a,const auto&b){return a.first!=b.first?a.first>b.first:a.second<b.second;});
+            branch=n;score=-1;const Index probes=std::min(options.strong_branching_candidates,fractional.size());
+            for(Index candidate=0;candidate<probes&&limit()==SolveStatus::optimal;++candidate) {
+                const Index j=fractional[candidate].second;const double value=relaxation.primal[j];double gains[2]={0,0};bool valid=true;
+                for(Index direction=0;direction<2;++direction) {
+                    Model probe=node.model;auto&v=probe.variables[j];if(direction)v.lower=std::max(v.lower,std::ceil(value));else v.upper=std::min(v.upper,std::floor(value));
+                    const auto tested=lp(probe);if(tested.status==SolveStatus::infeasible&&tested.verification.passed)gains[direction]=1e12;
+                    else if(tested.status==SolveStatus::optimal&&tested.verification.passed)gains[direction]=std::max(0.0,sign*tested.verification.dual_bound-current);
+                    else {valid=false;break;}
+                    emit("STRONG_BRANCH_PROBE",std::to_string(j)+(direction?" up":" down")+" gain="+std::to_string(gains[direction]));
+                }
+                if(valid){const double s=std::min(gains[0],gains[1])+.1*std::max(gains[0],gains[1]);if(s>score){score=s;branch=j;}}
+            }
+            if(branch==n)branch=fractional.front().second;
         }
         if(branch==n) {
             if(rounded_ok) { active=false; emit("NODE_PRUNED","integer LP optimum"); continue; }

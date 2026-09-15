@@ -20,7 +20,7 @@ Evidence date: 2026-09-14. Status reflects executable behavior, not class names.
 | Algorithms | Cuts | PARTIALLY IMPLEMENTED | Cover and clique separators implemented for provably valid binary nonnegative rows; general Gomory and MIR remain absent |
 | Algorithms | Presolve | PARTIALLY IMPLEMENTED | Fixed, constant and singleton reductions with reconstruction |
 | Algorithms | Heuristics | PARTIALLY IMPLEMENTED | Rounding and fixed-integer LP repair |
-| Algorithms | Node selection | IMPLEMENTED | Deterministic best-bound selection |
+| Algorithms | Node selection | IMPLEMENTED | Deterministic best-bound queue with most-fractional, learned pseudocost, and bounded strong-branch variable selection |
 | Algorithms | Dual simplex | NOT IMPLEMENTED | Current engine is primal revised simplex |
 | Industrial | Refinery scheduling | IMPLEMENTED | Seeded mathematical model generator |
 | Industrial | Crude blending | IMPLEMENTED | Seeded mathematical blend/demand/quality model generator and solve regression |
@@ -33,7 +33,7 @@ Evidence date: 2026-09-14. Status reflects executable behavior, not class names.
 | Benchmark | Netlib | IMPLEMENTED | AFIRO, SC50A and SC50B match and verify |
 | Benchmark | MIPLIB | PARTIALLY IMPLEMENTED | flugpl manifest/run exists and currently fails |
 | Benchmark | Mittelmann | NOT IMPLEMENTED | No manifest or measured run |
-| Benchmark | Reference comparison | PARTIALLY IMPLEMENTED | Isolated harness exists; no reference executable installed |
+| Benchmark | Reference comparison | IMPLEMENTED | Isolated HiGHS 1.15.1 process measured AFIRO, SC50A, SC50B and flugpl; raw evidence is checked in and no production target links the reference |
 | Sovereignty | From-scratch core | IMPLEMENTED | No external optimization engine in core |
 | Sovereignty | No solver dependency | IMPLEMENTED | Production build links no solver package |
 | Interface | CLI | IMPLEMENTED | Inspect, validate, solve, record and replay |

@@ -111,6 +111,8 @@ TEST_CASE("Option limits allow immediate stop and reject nonfinite values", "[ve
     SolverOptions o; o.node_limit=0; o.iteration_limit=0; o.time_limit_seconds=0;
     REQUIRE_NOTHROW(validate_options(o));
     o.branching="pseudocost"; REQUIRE_NOTHROW(validate_options(o));
+    o.branching="strong"; REQUIRE_NOTHROW(validate_options(o));
+    o.strong_branching_candidates=0; REQUIRE_THROWS(validate_options(o));
     o.time_limit_seconds=infinity; REQUIRE_THROWS(validate_options(o)); o={};
     o.tolerances.dual=std::numeric_limits<double>::quiet_NaN(); REQUIRE_THROWS(validate_options(o));
     for(auto s:{SolveStatus::infeasible,SolveStatus::unbounded,SolveStatus::time_limit,SolveStatus::node_limit,SolveStatus::iteration_limit,SolveStatus::numerical_failure}) REQUIRE(status_name(s)!="unknown");

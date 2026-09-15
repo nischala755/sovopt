@@ -42,7 +42,7 @@ Configuration read_config(std::istream& input) {
             if(value!="auto"&&value!="simplex"&&value!="interior_point") fail("unsupported solver method");
             result.solver.method=value;
         } else if (key == "branching") {
-            if(value!="most_fractional"&&value!="pseudocost") fail("unsupported branching strategy");
+            if(value!="most_fractional"&&value!="pseudocost"&&value!="strong") fail("unsupported branching strategy");
             result.solver.branching=value;
         } else if (key == "scaling" || key == "presolve" || key == "cuts" || key == "rounding" || key == "deterministic") {
             if(value!="true"&&value!="false") fail("expected true or false");
@@ -56,13 +56,14 @@ Configuration read_config(std::istream& input) {
             if(key=="time_limit") result.solver.time_limit_seconds=number; else if(key=="mip_gap") result.solver.mip_gap=number;
             else if(key=="primal_tolerance") result.solver.tolerances.primal=number; else if(key=="dual_tolerance") result.solver.tolerances.dual=number;
             else if(key=="integrality_tolerance") result.solver.tolerances.integrality=number; else result.solver.tolerances.pivot=number;
-        } else if (key == "iteration_limit" || key == "node_limit" || key == "max_line_length" || key == "max_entries") {
+        } else if (key == "iteration_limit" || key == "node_limit" || key == "strong_branching_candidates" || key == "max_line_length" || key == "max_entries") {
             Index size = 0;
             const auto parsed = std::from_chars(value.data(),value.data()+value.size(),size);
             if (parsed.ec != std::errc{} || parsed.ptr != value.data()+value.size() || size == 0) fail("expected positive integer");
             if (key == "max_line_length") result.mps.max_line_length = size;
             else if(key=="max_entries") result.mps.max_entries = size;
             else if(key=="iteration_limit") result.solver.iteration_limit=size;
+            else if(key=="strong_branching_candidates") result.solver.strong_branching_candidates=size;
             else result.solver.node_limit=size;
         } else fail("unknown key: " + key);
     }

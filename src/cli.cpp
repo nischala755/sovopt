@@ -22,7 +22,7 @@ constexpr std::string_view usage =
     "AstraNiti Sovereign Optimizer 0.1.0\n"
     "Usage: sovereign inspect|validate|solve MODEL.mps [--json] [--config FILE]\n"
     "       [--mps-format free|fixed]\n"
-    "       solve options: [--method auto|simplex|interior_point] [--branching most_fractional|pseudocost]\n"
+    "       solve options: [--method auto|simplex|interior_point] [--branching most_fractional|pseudocost|strong]\n"
     "       [--time-limit SEC] [--node-limit N] [--iteration-limit N] [--mip-gap GAP]\n"
     "       [--record RUN.astra]\n"
     "       sovereign replay RUN.astra [--reverify]\n"

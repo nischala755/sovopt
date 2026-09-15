@@ -31,6 +31,7 @@ struct SolverOptions {
     bool cuts = true;
     bool rounding = true;
     std::string branching = "most_fractional";
+    Index strong_branching_candidates = 5;
     std::string method = "auto";
     TelemetryCallback telemetry;
     std::function<bool()> cancelled;
