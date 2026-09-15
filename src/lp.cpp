@@ -123,6 +123,16 @@ SimplexState simplex(detail::StandardForm& f,std::span<const double> cost,bool p
         run.emit("LP_ITERATION",std::string(phase_one ? "phase_I " : "phase_II ")+std::to_string(old)+" -> "+std::to_string(entering));
     }
 }
+SimplexState dual_simplex(detail::StandardForm&f,std::span<const double>cost,Run&run){
+ const auto&tol=run.options.tolerances;run.emit("DUAL_SIMPLEX_STARTED");
+ while(true){const auto limit=run.limit();if(limit!=SolveStatus::optimal)return {limit,{},{},{},0};SparseBasis basis(f.matrix,f.basis,tol.pivot);auto xb=basis.solve(f.rhs);std::vector<double>cb;for(auto j:f.basis)cb.push_back(cost[j]);auto dual=basis.solve_transpose(cb);std::vector<bool>basic(f.matrix.columns(),false);for(auto j:f.basis)basic[j]=true;std::vector<double>reduced(f.matrix.columns());for(Index j=0;j<f.matrix.columns();++j)if(!basic[j]){reduced[j]=cost[j]-dot_column(f.matrix,j,dual);if(reduced[j]<-tol.dual*(1+std::abs(cost[j])))throw NumericalError("warm basis is not dual feasible");}
+  Index leaving=f.basis.size();for(Index i=0;i<xb.size();++i)if(xb[i]<-tol.primal*(1+std::abs(f.rhs[i]))&&(leaving==f.basis.size()||f.basis[i]<f.basis[leaving]))leaving=i;
+  if(leaving==f.basis.size()){std::vector<double>primal(f.matrix.columns());for(Index i=0;i<xb.size();++i)primal[f.basis[i]]=std::max(0.0,xb[i]);double obj=0;for(Index j=0;j<cost.size();++j)obj=std::fma(cost[j],primal[j],obj);run.emit("DUAL_SIMPLEX_COMPLETED");return {SolveStatus::optimal,std::move(primal),std::move(dual),{},obj};}
+  std::vector<double>unit(f.basis.size());unit[leaving]=1;const auto row=basis.solve_transpose(unit);Index entering=f.matrix.columns();double best=infinity;
+  for(Index j=0;j<f.matrix.columns();++j)if(!basic[j]&&!f.artificial[j]){const double a=dot_column(f.matrix,j,row);if(a<-tol.pivot){const double ratio=reduced[j]/(-a);if(ratio<best-tol.dual||(std::abs(ratio-best)<=tol.dual&&j<entering)){best=ratio;entering=j;}}}
+  if(entering==f.matrix.columns())throw NumericalError("dual simplex detected primal infeasibility; cold Phase I required");const auto old=f.basis[leaving];f.basis[leaving]=entering;++run.iterations;run.emit("DUAL_SIMPLEX_ITERATION",std::to_string(old)+" -> "+std::to_string(entering));
+ }
+}
 void remove_artificials(detail::StandardForm& f,Run& run) {
     for (Index i=0;i<f.basis.size();) {
         if (!f.artificial[f.basis[i]]) { ++i; continue; }
@@ -234,7 +244,7 @@ double objective(const Model& m,std::span<const double> x) {
     return value;
 }
 }
-SolveResult solve_lp(const Model& model,const SolverOptions& options) {
+SolveResult solve_lp(const Model& model,const SolverOptions& options,const LpWarmStart* warm,LpWarmStart* output) {
     validate_options(options);
     Model relaxed=model; for (auto& v : relaxed.variables) v.type=VariableType::continuous;
     const auto validation=validate(relaxed);
@@ -257,17 +267,18 @@ SolveResult solve_lp(const Model& model,const SolverOptions& options) {
             run.emit("PRESOLVE_COMPLETED",std::to_string(p.reduced.variables.size())+" variables, "+std::to_string(p.reduced.constraints.size())+" rows");
         }
         auto f=detail::standardize(p.reduced,options.scaling);
+        SimplexState state;bool warm_used=false;
+        if(warm&&warm->rows==f.matrix.rows()&&warm->columns==f.matrix.columns()&&warm->basis.size()==f.matrix.rows())try{f.basis=warm->basis;state=dual_simplex(f,f.cost,run);warm_used=state.status==SolveStatus::optimal;}catch(const NumericalError&){run.emit("WARM_START_REJECTED","cold Phase I fallback");f=detail::standardize(p.reduced,options.scaling);}
         std::vector<double> phase_one(f.cost.size(),0); for (Index j=0;j<f.cost.size();++j) if (f.artificial[j]) phase_one[j]=1;
-        auto state=simplex(f,phase_one,true,run);
+        if(!warm_used)state=simplex(f,phase_one,true,run);
         if (state.status!=SolveStatus::optimal) { result.status=state.status==SolveStatus::unbounded ? SolveStatus::numerical_failure : state.status; return finish(); }
-        if (state.objective>options.tolerances.primal) {
+        if (!warm_used&&state.objective>options.tolerances.primal) {
             result.certificate=certificate(model,f,state.dual,p.original_rows,true);
             result.verification=verify_infeasibility(model,result.certificate,options.tolerances);
             result.status=result.verification.passed ? SolveStatus::infeasible : SolveStatus::numerical_failure;
             result.message="Phase I Farkas certificate checked in original coordinates"; return finish();
         }
-        remove_artificials(f,run);
-        state=simplex(f,f.cost,false,run); result.status=state.status;
+        if(!warm_used){remove_artificials(f,run);state=simplex(f,f.cost,false,run);} result.status=state.status;
         if (state.status==SolveStatus::optimal || state.status==SolveStatus::unbounded) {
             result.primal=p.restore(f.restore(state.primal)); result.objective=objective(model,result.primal);
             if (state.status==SolveStatus::optimal) {
@@ -281,6 +292,7 @@ SolveResult solve_lp(const Model& model,const SolverOptions& options) {
                 result.verification=verify_unboundedness(model,result.primal,result.ray,options.tolerances,false);
                 result.message="Original-model feasible point and improving recession ray checked";
             }
+            if (result.status==SolveStatus::optimal&&output)*output={f.matrix.rows(),f.matrix.columns(),f.basis};
             if (!result.verification.passed) {
                 result.status=SolveStatus::numerical_failure; result.mip_gap=infinity;
                 for (const auto& issue : result.verification.violations) result.message+="; "+issue;
@@ -290,4 +302,5 @@ SolveResult solve_lp(const Model& model,const SolverOptions& options) {
       catch (const std::overflow_error& error) { result.status=SolveStatus::numerical_failure; result.message=error.what(); }
     return finish();
 }
+SolveResult solve_lp(const Model&model,const SolverOptions&options){return solve_lp(model,options,nullptr,nullptr);}
 }

@@ -15,6 +15,7 @@ struct Node {
     Index id=0, branch=0;
     double parent_bound=-infinity, distance=0;
     bool up=false;
+    LpWarmStart warm;
 };
 struct Later { bool operator()(const Node& a,const Node& b) const { return a.bound!=b.bound?a.bound>b.bound:a.id>b.id; } };
 double objective(const Model& m,const std::vector<double>& x) {
@@ -55,10 +56,10 @@ SolveResult solve_mip(const Model& original,const SolverOptions& options) {
         if(r.iterations>=options.iteration_limit) return SolveStatus::iteration_limit;
         return SolveStatus::optimal;
     };
-    auto lp=[&](const Model& m) {
+    auto lp=[&](const Model& m,const LpWarmStart* input=nullptr,LpWarmStart* output=nullptr) {
         SolverOptions o=options; o.iteration_limit=options.iteration_limit-r.iterations;
-        o.time_limit_seconds=std::max(0.0,options.time_limit_seconds-elapsed()); o.telemetry={};
-        auto result=solve_lp(m,o); r.iterations+=result.iterations; return result;
+        o.time_limit_seconds=std::max(0.0,options.time_limit_seconds-elapsed()); o.telemetry={};o.presolve=false;
+        auto result=solve_lp(m,o,input,output); r.iterations+=result.iterations; return result;
     };
     auto accept=[&](std::vector<double> x) {
         if(x.size()!=original.variables.size()) return false;
@@ -84,7 +85,8 @@ SolveResult solve_mip(const Model& original,const SolverOptions& options) {
         for(const auto& v:node.model.variables) if(v.lower>v.upper || (v.type!=VariableType::continuous&&std::ceil(v.lower)>std::floor(v.upper))) contradiction=true;
         for(const auto& row:node.model.constraints) if(row.lower>row.upper) contradiction=true;
         if(contradiction) { emit("NODE_PRUNED","inconsistent bounds"); active=false; continue; }
-        auto relaxation=lp(node.model);
+        LpWarmStart solved_basis;const LpWarmStart* inherited=node.warm.basis.empty()?nullptr:&node.warm;
+        auto relaxation=lp(node.model,inherited,&solved_basis);
         if(relaxation.status==SolveStatus::infeasible&&relaxation.verification.passed) { emit("NODE_PRUNED","verified LP infeasibility"); active=false; continue; }
         if(relaxation.status==SolveStatus::unbounded) {
             auto x=relaxation.primal, ray=relaxation.ray;
@@ -131,7 +133,7 @@ SolveResult solve_mip(const Model& original,const SolverOptions& options) {
                 const Index j=fractional[candidate].second;const double value=relaxation.primal[j];double gains[2]={0,0};bool valid=true;
                 for(Index direction=0;direction<2;++direction) {
                     Model probe=node.model;auto&v=probe.variables[j];if(direction)v.lower=std::max(v.lower,std::ceil(value));else v.upper=std::min(v.upper,std::floor(value));
-                    const auto tested=lp(probe);if(tested.status==SolveStatus::infeasible&&tested.verification.passed)gains[direction]=1e12;
+                    const auto tested=lp(probe,&solved_basis,nullptr);if(tested.status==SolveStatus::infeasible&&tested.verification.passed)gains[direction]=1e12;
                     else if(tested.status==SolveStatus::optimal&&tested.verification.passed)gains[direction]=std::max(0.0,sign*tested.verification.dual_bound-current);
                     else {valid=false;break;}
                     emit("STRONG_BRANCH_PROBE",std::to_string(j)+(direction?" up":" down")+" gain="+std::to_string(gains[direction]));
@@ -147,6 +149,7 @@ SolveResult solve_mip(const Model& original,const SolverOptions& options) {
         const double value=relaxation.primal[branch], f=value-std::floor(value);
         for(bool up:{false,true}) {
             Node child{node.model,current,r.nodes_generated++,branch,current,up?1-f:f,up};
+            child.warm=solved_basis;
             auto& v=child.model.variables[branch]; if(up) v.lower=std::max(v.lower,std::ceil(value)); else v.upper=std::min(v.upper,std::floor(value));
             open.push(std::move(child)); emit("NODE_CREATED",std::to_string(r.nodes_generated-1));
         }

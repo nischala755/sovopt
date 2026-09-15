@@ -21,7 +21,7 @@ Evidence date: 2026-09-14. Status reflects executable behavior, not class names.
 | Algorithms | Presolve | PARTIALLY IMPLEMENTED | Fixed, constant and singleton reductions with reconstruction |
 | Algorithms | Heuristics | PARTIALLY IMPLEMENTED | Rounding and fixed-integer LP repair |
 | Algorithms | Node selection | IMPLEMENTED | Deterministic best-bound queue with most-fractional, learned pseudocost, and bounded strong-branch variable selection |
-| Algorithms | Dual simplex | NOT IMPLEMENTED | Current engine is primal revised simplex |
+| Algorithms | Dual simplex | PARTIALLY IMPLEMENTED | Compatible MILP child bases use dual-simplex repair with safe cold fallback; standalone selection and sparse basis updates remain |
 | Industrial | Refinery scheduling | IMPLEMENTED | Seeded mathematical model generator |
 | Industrial | Crude blending | IMPLEMENTED | Seeded mathematical blend/demand/quality model generator and solve regression |
 | Industrial | Process optimization | IMPLEMENTED | Seeded staged-yield process-flow generator and solve regression |

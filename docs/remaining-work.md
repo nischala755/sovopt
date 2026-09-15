@@ -34,7 +34,8 @@
 
 ## C. Missing
 
-- Dual simplex and a real algorithm-selecting `auto` method.
+- General standalone dual-simplex selection and certificates. Compatible MILP
+  child bases already use dual-simplex reoptimization with cold fallback.
 - Authoritative multicore LP/MILP, sparse LU update schemes, general Gomory/MIR
   cuts, feasibility pump and tree restart/persistence. Bounded strong branching
   with real child LP probes and safe

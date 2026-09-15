@@ -29,6 +29,12 @@ not a performance claim. Phase I removes zero artificial basics only after an
 exact-zero dependency check. A small nonzero candidate below the pivot threshold
 causes numerical failure, never row deletion.
 
+An optimal standard-form basis can be exported as an `LpWarmStart`. A compatible
+bound-modified child first checks dual feasibility, then uses dual-simplex pivots
+to repair primal infeasibility. Structurally incompatible or unsuitable bases
+fall back to the cold two-phase path. Every repair pivot consumes the ordinary
+iteration and time budgets and produces telemetry.
+
 `SparseBasis` stores LU factors as sparse ordered rows with partial row pivoting.
 It never allocates a dense square matrix. The current implementation refactorizes
 after each pivot; eta updates and Forrest–Tomlin updates are future performance

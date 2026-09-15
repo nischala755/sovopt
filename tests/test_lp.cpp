@@ -123,3 +123,9 @@ TEST_CASE("Netlib SC50 certificates verify in original coordinates", "[lp][regre
         REQUIRE(result.iterations<1000);
     }
 }
+TEST_CASE("LP warm start uses dual simplex to repair a tightened bound","[lp][warmstart]") {
+ auto m=make_lp({-3,-2},{{"x",0,4},{"y",0,4}},{{"cap",-infinity,5}},{{0,0,1},{0,1,1}});LpWarmStart warm;
+ const auto root=solve_lp(m,{},nullptr,&warm);REQUIRE(root.status==SolveStatus::optimal);REQUIRE_FALSE(warm.basis.empty());
+ m.variables[0].upper=2;std::vector<std::string>events;SolverOptions o;o.presolve=false;o.telemetry=[&](const auto&e){events.push_back(e.type);};LpWarmStart child;
+ const auto result=solve_lp(m,o,&warm,&child);INFO(result.message);REQUIRE(result.status==SolveStatus::optimal);REQUIRE(result.objective==Catch::Approx(-12));REQUIRE(result.verification.passed);REQUIRE(std::find(events.begin(),events.end(),"DUAL_SIMPLEX_STARTED")!=events.end());
+}

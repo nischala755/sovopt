@@ -39,3 +39,9 @@ same global LP-iteration ceiling with bound 1173926.1111111108 after 51 nodes.
 The comparison indicates that repeated cold simplex starts and lack of basis
 reoptimization dominate the search; stronger branching alone does not close the
 reliability gap.
+
+After compatible-basis inheritance and dual-simplex repair, a fresh pseudocost
+`flugpl` run processed 96 nodes before the same 100,000-iteration limit, with
+bound 1176026.6666666665 and no incumbent in 7.93 seconds. The failure remains:
+basis reuse without sparse factor updates and stronger incumbent generation is
+insufficient for this instance.
