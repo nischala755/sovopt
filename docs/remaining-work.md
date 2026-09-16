@@ -13,7 +13,7 @@
   safe cut framework. A deterministic, budgeted L1 feasibility pump produces
   independently verified root incumbents when its projection succeeds. Root
   separation includes efficacy-filtered single-row Chvatal-Gomory cuts for
-  shifted general-integer rows.
+  shifted general-integer rows and one conservative root GMI tableau cut round.
 - CPU and optional CUDA backends, fingerprints, adaptive experimental workload,
   telemetry, CLI, Python, REST API, dashboard and optional Mistral integration.
 - Optimization Flight Recorder recording, SHA-256 integrity, replay,
@@ -41,8 +41,8 @@
 
 - General standalone dual-simplex selection and certificates. Compatible MILP
   child bases already use dual-simplex reoptimization with cold fallback.
-- Authoritative multicore LP/MILP, Forrest-Tomlin sparse LU updates, tableau Gomory/MIR
-  cuts, local search and tree restart/persistence. Bounded strong branching
+- Authoritative multicore LP/MILP, Forrest-Tomlin sparse LU updates, multi-round
+  cut-pool management, local search and tree restart/persistence. Bounded strong branching
   with real child LP probes and safe
   binary knapsack cover and conflict-clique separators are implemented.
 - Sparse large-scale QP KKT factorization, QP file import, infeasibility and

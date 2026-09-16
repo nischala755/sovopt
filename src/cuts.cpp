@@ -124,4 +124,24 @@ CutStatistics apply_safe_root_cuts(Model&m,std::span<const double> lp_point){
  }
  if(m.constraints.size()!=original_rows)m.matrix=CscMatrix::from_triplets(m.constraints.size(),m.variables.size(),std::move(entries));return stats;
 }
+
+Index apply_tableau_gmi_cuts(Model& m,const LpTableau& tableau,
+                             std::span<const double> lp_point,double efficacy_tolerance,Index limit) {
+ if(lp_point.size()!=m.variables.size()||tableau.columns.empty()||limit==0||
+    !std::isfinite(efficacy_tolerance)||efficacy_tolerance<=0) return 0;
+ std::vector<bool> basic(tableau.columns.size(),false);for(const auto&row:tableau.rows)if(row.basic_column<basic.size())basic[row.basic_column]=true;
+ std::vector<Triplet> entries;entries.reserve(m.matrix.nonzeros());for(Index j=0;j<m.matrix.columns();++j){const auto c=m.matrix.column(j);for(Index k=0;k<c.rows.size();++k)entries.push_back({c.rows[k],j,c.values[k]});}
+ std::set<std::string> names;for(const auto&r:m.constraints)names.insert(r.name);Index added=0;
+ for(Index row_index=0;row_index<tableau.rows.size()&&added<limit;++row_index){const auto&row=tableau.rows[row_index];if(row.basic_column>=tableau.columns.size()||!tableau.columns[row.basic_column].integer_lattice||row.coefficients.size()!=tableau.columns.size())continue;
+  const double f0=row.rhs-std::floor(row.rhs);if(!(f0>1e-9&&f0<1-1e-9))continue;std::vector<long double> coefficients(m.variables.size());long double constant=0;bool safe=true;
+  for(Index j=0;j<tableau.columns.size();++j){if(basic[j]||tableau.columns[j].artificial)continue;const double a=row.coefficients[j];if(std::abs(a)<=1e-14)continue;double gamma=0;
+   if(tableau.columns[j].integer_lattice){const double fraction=a-std::floor(a);gamma=fraction<=f0?fraction/f0:(1-fraction)/(1-f0);}
+   else gamma=a>=0?a/f0:-a/(1-f0);
+   if(!std::isfinite(gamma)||gamma<0){safe=false;break;}if(gamma<=1e-14)continue;const auto&column=tableau.columns[j];if(!column.representable){safe=false;break;}constant+=static_cast<long double>(gamma)*column.expression_constant;for(const auto&[original,value]:column.original_expression)coefficients[original]+=static_cast<long double>(gamma)*value;
+  }
+  if(!safe)continue;const long double lower=1-constant;long double activity=0;for(Index j=0;j<coefficients.size();++j)activity+=coefficients[j]*lp_point[j];if(!(lower-activity>efficacy_tolerance*(1+std::abs(lower))))continue;
+  const auto name="gmi_"+std::to_string(row_index);if(names.contains(name))continue;const Index new_row=m.constraints.size();m.constraints.push_back({name,static_cast<double>(lower),infinity});names.insert(name);for(Index j=0;j<coefficients.size();++j)if(coefficients[j]!=0)entries.push_back({new_row,j,static_cast<double>(coefficients[j])});++added;
+ }
+ if(added)m.matrix=CscMatrix::from_triplets(m.constraints.size(),m.variables.size(),std::move(entries));return added;
+}
 }

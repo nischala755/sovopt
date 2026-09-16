@@ -1,6 +1,7 @@
 #include <sovereign/mip.hpp>
 #include <sovereign/cuts.hpp>
 #include <sovereign/lp.hpp>
+#include <sovereign/basis.hpp>
 #include <sovereign/verification.hpp>
 #include <algorithm>
 #include <chrono>
@@ -188,6 +189,20 @@ SolveResult solve_mip(const Model& original,const SolverOptions& options) {
                 if(relaxation.status!=SolveStatus::optimal||!relaxation.verification.passed) {
                     r.status=relaxation.status==SolveStatus::optimal?SolveStatus::numerical_failure:relaxation.status;
                     r.message=relaxation.message; return finish();
+                }
+            }
+            SolverOptions tableau_options=options;tableau_options.presolve=false;Index gmi=0;
+            try { const auto tableau=extract_lp_tableau(node.model,tableau_options,solved_basis);gmi=apply_tableau_gmi_cuts(node.model,tableau,relaxation.primal,1e-7,1); }
+            catch(const NumericalError& error) { emit("CUT_SKIPPED",std::string("tableau unavailable: ")+error.what()); }
+            if(gmi) {
+                r.cuts_added+=gmi;emit("CUT_GENERATED","tableau gmi="+std::to_string(gmi));
+                solved_basis={};relaxation=lp(node.model,nullptr,&solved_basis);
+                if(relaxation.status==SolveStatus::infeasible&&relaxation.verification.passed) {
+                    emit("NODE_PRUNED","verified LP infeasibility after GMI cuts");active=false;continue;
+                }
+                if(relaxation.status!=SolveStatus::optimal||!relaxation.verification.passed) {
+                    r.status=relaxation.status==SolveStatus::optimal?SolveStatus::numerical_failure:relaxation.status;
+                    r.message=relaxation.message;return finish();
                 }
             }
         }

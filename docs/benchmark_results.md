@@ -65,3 +65,10 @@ on the solved `flugpl` root relaxation. The measured result therefore remained
 initial experiment that installed every valid candidate before solving made the
 root LP consume the entire budget; that approach was rejected and is not part of
 the implementation.
+
+The first production GMI round was deliberately capped at one cut after measured
+four- and 32-cut rounds spent excessive iterations reoptimizing the root. With
+one GMI cut, `flugpl` still reached 100,000 iterations without an incumbent after
+5 nodes and 4.82 solver seconds, with bound 1169774.1730715898. The baseline with
+no applicable tableau cut remains faster on this instance, so GMI is a verified
+capability rather than a demonstrated `flugpl` performance improvement.

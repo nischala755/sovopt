@@ -16,8 +16,18 @@ LpTableau extract_lp_tableau(const Model& model,const SolverOptions& options,
     SparseBasis basis(standard.matrix,warm.basis,options.tolerances.pivot);
     LpTableau result;
     result.columns.resize(standard.matrix.columns());
-    for(Index j=0;j<result.columns.size();++j)
+    for(Index j=0;j<result.columns.size();++j) {
         result.columns[j].artificial=standard.artificial[j];
+        const auto& expression=standard.expressions[j];
+        result.columns[j].representable=expression.representable;
+        result.columns[j].expression_constant=expression.constant;
+        result.columns[j].original_expression=expression.terms;
+        bool lattice=expression.representable&&!expression.terms.empty()&&
+            expression.constant==std::trunc(expression.constant);
+        for(const auto& [original,coefficient]:expression.terms)
+            if(model.variables[original].type==VariableType::continuous||coefficient!=std::trunc(coefficient)) lattice=false;
+        result.columns[j].integer_lattice=lattice&&!standard.artificial[j];
+    }
     for(Index original=0;original<standard.variables.size();++original) {
         const auto& transform=standard.variables[original];
         const bool lattice=model.variables[original].type!=VariableType::continuous&&
@@ -27,7 +37,7 @@ LpTableau extract_lp_tableau(const Model& model,const SolverOptions& options,
             auto& metadata=result.columns[column];
             metadata.original_variable=original;
             metadata.restore_coefficient=coefficient;
-            metadata.integer_lattice=lattice;
+            metadata.integer_lattice=metadata.integer_lattice&&lattice;
         }
     }
     const auto basic_values=basis.solve(standard.rhs);

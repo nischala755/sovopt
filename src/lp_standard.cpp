@@ -2,6 +2,7 @@
 #include <sovereign/basis.hpp>
 #include <cmath>
 #include <algorithm>
+#include <map>
 
 namespace sovereign::detail {
 namespace {
@@ -62,15 +63,40 @@ StandardForm standardize(const Model& m,bool scaling) {
         for (auto& r : rows) for (auto& [j,a] : r.entries) a=checked(a*scale[j]);
         for (auto& t : f.variables) for (auto& [j,a] : t.terms) a=checked(a*scale[j]);
     }
+    f.expressions.resize(f.cost.size());
+    for (Index original=0;original<f.variables.size();++original) {
+        const auto& transform=f.variables[original];
+        if(transform.terms.size()!=1) continue;
+        const auto [column,coefficient]=transform.terms.front();
+        auto& expression=f.expressions[column];
+        expression.representable=true;
+        expression.constant=checked(-transform.shift/coefficient);
+        expression.terms.push_back({original,checked(1/coefficient)});
+    }
     std::vector<Triplet> entries;
     for (Index i=0;i<rows.size();++i) {
         const auto& r=rows[i]; f.rhs.push_back(r.rhs); f.origins.push_back(r.origin);
         for (auto [j,a] : r.entries) entries.push_back({i,j,a});
-        if (r.sense!='E') { entries.push_back({i,f.cost.size(),r.sense=='L' ? 1.0 : -1.0}); f.cost.push_back(0); }
+        if (r.sense!='E') {
+            const double slack_coefficient=r.sense=='L' ? 1.0 : -1.0;
+            entries.push_back({i,f.cost.size(),slack_coefficient}); f.cost.push_back(0);
+            ColumnExpression slack;slack.representable=true;slack.constant=checked(r.rhs/slack_coefficient);
+            std::map<Index,double> combined;
+            for(const auto& [column,coefficient]:r.entries) {
+                const auto& source=f.expressions[column];
+                if(!source.representable) { slack.representable=false;break; }
+                slack.constant=checked(slack.constant-checked(coefficient*source.constant/slack_coefficient));
+                for(const auto& [original,value]:source.terms)
+                    combined[original]=checked(combined[original]-checked(coefficient*value/slack_coefficient));
+            }
+            if(slack.representable) for(const auto& term:combined) if(term.second!=0) slack.terms.push_back(term);
+            f.expressions.push_back(std::move(slack));
+        }
     }
     f.artificial.assign(f.cost.size(),false);
     for (Index i=0;i<rows.size();++i) {
         f.basis.push_back(f.cost.size()); entries.push_back({i,f.cost.size(),1}); f.cost.push_back(0); f.artificial.push_back(true);
+        ColumnExpression artificial;artificial.representable=true;f.expressions.push_back(std::move(artificial));
     }
     f.matrix=CscMatrix::from_triplets(rows.size(),f.cost.size(),std::move(entries));
     return f;

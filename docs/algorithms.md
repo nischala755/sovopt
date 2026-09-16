@@ -99,8 +99,13 @@ generates single-row Chvatal-Gomory inequalities for general integer coefficient
 Variables are shifted by finite integral lower bounds, both row sides are normalized
 to upper inequalities, and a bounded set of nonnegative row multipliers is tested.
 Only cuts violated by the solved root LP beyond a scaled efficacy tolerance are
-installed, followed by one root reoptimization. Tableau Gomory and general
-mixed-integer rounding cuts remain absent.
+installed. A checked tableau row whose basic variable lies on a proven integer
+lattice can additionally produce a generalized mixed-integer cut. Nonbasic
+integer and continuous columns use their respective GMI coefficient functions;
+slack and transformed columns are substituted through their original-coordinate
+expressions. Artificial columns are fixed at zero, and any unrepresentable split
+column rejects the row. Production integration installs at most one efficacious
+GMI cut and performs one root reoptimization to limit numerical and iteration cost.
 
 Node, time, iteration and cancellation limits preserve the incumbent and best
 known open-node bound. MIP gap is measured in normalized objective space. When

@@ -8,6 +8,9 @@ struct LpTableauColumn {
     double restore_coefficient = 0;
     bool integer_lattice = false;
     bool artificial = false;
+    bool representable = false;
+    double expression_constant = 0;
+    std::vector<std::pair<Index,double>> original_expression;
 };
 // Each row represents sum_j coefficients[j] * z_j = rhs in the solver's
 // nonnegative standard-form variables. Basic columns form the identity.

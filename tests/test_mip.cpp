@@ -129,6 +129,17 @@ TEST_CASE("Single-row Chvatal-Gomory cuts preserve shifted two-sided integer dom
  }
 }
 
+TEST_CASE("Tableau GMI cuts remove a fractional integer basic point and preserve mixed feasible points","[mip][cuts][gmi]") {
+ auto m=example({1,0},{{"x",0,4,VariableType::integer},{"y",0,4,VariableType::continuous}},{{"mixed",-infinity,2.5}},{{0,0,1},{0,1,1}});
+ SolverOptions o;o.presolve=false;o.scaling=false;LpWarmStart warm;const auto relaxation=solve_lp(m,o,nullptr,&warm);
+ REQUIRE(relaxation.status==SolveStatus::optimal);REQUIRE(relaxation.primal[0]==Catch::Approx(2.5));
+ const auto tableau=extract_lp_tableau(m,o,warm);const Index added=apply_tableau_gmi_cuts(m,tableau,relaxation.primal);
+ REQUIRE(added>=1);
+ for(int x=0;x<=2;++x)for(int quarter=0;quarter<=10-4*x;++quarter){const double y=quarter/4.0;const auto activity=m.matrix.multiply(std::vector<double>{double(x),y});for(Index i=1;i<m.constraints.size();++i)REQUIRE(activity[i]>=m.constraints[i].lower-1e-10);}
+ auto original=example({1,0},{{"x",0,4,VariableType::integer},{"y",0,4,VariableType::continuous}},{{"mixed",-infinity,2.5}},{{0,0,1},{0,1,1}});
+ const auto solved=run(original);REQUIRE(solved.status==SolveStatus::optimal);REQUIRE(solved.objective==Catch::Approx(2));REQUIRE(solved.cuts_added>=1);
+}
+
 TEST_CASE("Feasibility pump finds and independently verifies an incumbent missed by one-shot rounding","[mip][heuristic]") {
  auto m=example({1,1},{{"x",0,1,VariableType::binary},{"y",0,1,VariableType::binary}},{{"capacity",-infinity,1.5}},{{0,0,1},{0,1,1}});
  SolverOptions o;o.cuts=false;o.node_limit=1;o.rounding=true;o.feasibility_pump=true;o.feasibility_pump_passes=4;
