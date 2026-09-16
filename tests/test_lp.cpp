@@ -1,6 +1,7 @@
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/catch_approx.hpp>
 #include <sovereign/lp.hpp>
+#include <sovereign/basis.hpp>
 #include <sovereign/verification.hpp>
 #include <sovereign/mps.hpp>
 #include <random>
@@ -128,4 +129,36 @@ TEST_CASE("LP warm start uses dual simplex to repair a tightened bound","[lp][wa
  const auto root=solve_lp(m,{},nullptr,&warm);REQUIRE(root.status==SolveStatus::optimal);REQUIRE_FALSE(warm.basis.empty());
  m.variables[0].upper=2;std::vector<std::string>events;SolverOptions o;o.presolve=false;o.telemetry=[&](const auto&e){events.push_back(e.type);};LpWarmStart child;
  const auto result=solve_lp(m,o,&warm,&child);INFO(result.message);REQUIRE(result.status==SolveStatus::optimal);REQUIRE(result.objective==Catch::Approx(-12));REQUIRE(result.verification.passed);REQUIRE(std::find(events.begin(),events.end(),"DUAL_SIMPLEX_STARTED")!=events.end());
+}
+
+TEST_CASE("LP tableau extraction returns a verified identity basis and integrality metadata","[lp][tableau]") {
+ auto m=make_lp({1,1},{{"x",0,infinity,VariableType::integer},{"y",0,infinity,VariableType::continuous}},{{"cap",-infinity,2.5}},{{0,0,1},{0,1,1}},ObjectiveSense::maximize);
+ SolverOptions o;o.presolve=false;o.scaling=false;LpWarmStart warm;
+ const auto solved=solve_lp(m,o,nullptr,&warm);REQUIRE(solved.status==SolveStatus::optimal);
+ const auto tableau=extract_lp_tableau(m,o,warm);
+ REQUIRE(tableau.rows.size()==warm.rows);REQUIRE(tableau.columns.size()==warm.columns);
+ REQUIRE(tableau.columns[0].original_variable==0);REQUIRE(tableau.columns[0].integer_lattice);
+ REQUIRE(tableau.columns[1].original_variable==1);REQUIRE_FALSE(tableau.columns[1].integer_lattice);
+ for(Index i=0;i<tableau.rows.size();++i) {
+  REQUIRE(tableau.rows[i].basic_column==warm.basis[i]);
+  REQUIRE(std::isfinite(tableau.rows[i].rhs));
+  for(Index k=0;k<warm.basis.size();++k)
+   REQUIRE(tableau.rows[i].coefficients[warm.basis[k]]==Catch::Approx(i==k?1.0:0.0).margin(1e-11));
+ }
+ auto invalid=warm;invalid.columns++;
+ REQUIRE_THROWS_AS(extract_lp_tableau(m,o,invalid),NumericalError);
+}
+
+TEST_CASE("LP tableau metadata refuses unsafe scaled and split integer lattices","[lp][tableau][numerical]") {
+ auto scaled=make_lp({-1,0},{{"x",0,infinity,VariableType::integer},{"y",0,infinity,VariableType::continuous}},{{"cap",-infinity,4}},{{0,0,2},{0,1,4}});
+ SolverOptions o;o.presolve=false;o.scaling=true;LpWarmStart warm;
+ REQUIRE(solve_lp(scaled,o,nullptr,&warm).status==SolveStatus::optimal);
+ const auto first=extract_lp_tableau(scaled,o,warm);
+ REQUIRE(first.columns[0].restore_coefficient==Catch::Approx(2));
+ REQUIRE_FALSE(first.columns[0].integer_lattice);
+ auto split=make_lp({0},{{"z",-infinity,infinity,VariableType::integer}},{{"fix",0,0}},{{0,0,1}});
+ o.scaling=false;warm={};REQUIRE(solve_lp(split,o,nullptr,&warm).status==SolveStatus::optimal);
+ const auto second=extract_lp_tableau(split,o,warm);
+ REQUIRE(second.columns[0].original_variable==0);REQUIRE(second.columns[1].original_variable==0);
+ REQUIRE_FALSE(second.columns[0].integer_lattice);REQUIRE_FALSE(second.columns[1].integer_lattice);
 }

@@ -45,6 +45,13 @@ sparse-LU updates such as Forrest-Tomlin remain future performance work. Phase I
 excludes artificial variables, optimizes the original objective,
 and returns a primal point plus dual multipliers or an improving recession ray.
 
+An optimal `LpWarmStart` can also be converted into a sparse-basis tableau view.
+Each extracted row is computed as `e_i^T B^-1 A`, checked to contain the expected
+identity basis, and paired with `B^-1 b`. Column metadata records its original
+variable and restoration coefficient. A column is marked as an integer lattice
+only when the transformation is a single unit-sign term with an integral shift;
+scaled and split integer columns are conservatively rejected for cut generation.
+
 ## Certificates and numerical policy
 
 All terminal mathematical claims are rechecked against the original model by an

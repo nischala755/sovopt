@@ -10,7 +10,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 include(CTest)
 
 add_library(sovereign_core src/sparse_matrix.cpp src/model.cpp src/validation.cpp src/mps.cpp src/presolve.cpp
-  src/basis.cpp src/solution.cpp src/verification.cpp src/lp_standard.cpp src/lp.cpp
+  src/basis.cpp src/solution.cpp src/verification.cpp src/lp_standard.cpp src/lp.cpp src/lp_tableau.cpp
   src/cuts.cpp src/mip.cpp src/qp.cpp src/backend.cpp src/fingerprint.cpp src/benchmark.cpp src/generators.cpp src/recorder.cpp)
 
 if(SOVEREIGN_ENABLE_CUDA)

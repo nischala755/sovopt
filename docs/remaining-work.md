@@ -6,7 +6,8 @@
 - Two-phase primal revised simplex with Harris two-pass ratio selection,
   deterministic Bland pricing, bounded basis-history detection, residual-based
   basis refinement, product-form inverse updates with controlled sparse-LU
-  refactorization, and original-model verification.
+  refactorization, original-model verification, and a checked tableau-row
+  extraction interface with transformation-integrality metadata.
 - Verified Netlib AFIRO, SC50A and SC50B regressions.
 - Small-model MILP branch-and-bound, branching, bounds, limits, rounding and a
   safe cut framework. A deterministic, budgeted L1 feasibility pump produces
