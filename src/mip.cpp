@@ -150,9 +150,9 @@ SolveResult solve_mip(const Model& original,const SolverOptions& options) {
     Model root=original;
     for(auto& v:root.variables) if(v.type==VariableType::binary) { v.lower=std::max(0.0,v.lower); v.upper=std::min(1.0,v.upper); }
     CutStatistics cut_stats;
-    if(options.cuts) { cut_stats=apply_safe_root_cuts(root);r.cuts_added=cut_stats.integer_rounding+cut_stats.cover+cut_stats.clique; }
+    if(options.cuts) { cut_stats=apply_safe_root_cuts(root);r.cuts_added=cut_stats.integer_rounding+cut_stats.chvatal_gomory+cut_stats.cover+cut_stats.clique; }
     open.push({std::move(root)}); r.nodes_generated=1; emit("MIP_STARTED"); emit("NODE_CREATED","0");
-    if(r.cuts_added) emit("CUT_GENERATED","rounding="+std::to_string(cut_stats.integer_rounding)+" cover="+std::to_string(cut_stats.cover)+" clique="+std::to_string(cut_stats.clique));
+    if(r.cuts_added) emit("CUT_GENERATED","rounding="+std::to_string(cut_stats.integer_rounding)+" cg="+std::to_string(cut_stats.chvatal_gomory)+" cover="+std::to_string(cut_stats.cover)+" clique="+std::to_string(cut_stats.clique));
     const Index n=original.variables.size(); std::vector<double> upsum(n),downsum(n); std::vector<Index> upcount(n),downcount(n);
     while(!open.empty()) {
         r.status=limit(); if(r.status!=SolveStatus::optimal) return finish();
@@ -175,6 +175,22 @@ SolveResult solve_mip(const Model& original,const SolverOptions& options) {
             return finish();
         }
         if(relaxation.status!=SolveStatus::optimal||!relaxation.verification.passed) { r.status=relaxation.status==SolveStatus::optimal?SolveStatus::numerical_failure:relaxation.status; r.message=relaxation.message; return finish(); }
+        if(options.cuts&&node.id==0) {
+            const auto separated=apply_safe_root_cuts(node.model,relaxation.primal);
+            if(separated.chvatal_gomory) {
+                r.cuts_added+=separated.chvatal_gomory;
+                emit("CUT_GENERATED","violated cg="+std::to_string(separated.chvatal_gomory));
+                solved_basis={};
+                relaxation=lp(node.model,nullptr,&solved_basis);
+                if(relaxation.status==SolveStatus::infeasible&&relaxation.verification.passed) {
+                    emit("NODE_PRUNED","verified LP infeasibility after root cuts"); active=false; continue;
+                }
+                if(relaxation.status!=SolveStatus::optimal||!relaxation.verification.passed) {
+                    r.status=relaxation.status==SolveStatus::optimal?SolveStatus::numerical_failure:relaxation.status;
+                    r.message=relaxation.message; return finish();
+                }
+            }
+        }
         current=std::max(current,lattice_bound(original,relaxation.verification.dual_bound));
         if(node.distance>0&&std::isfinite(node.parent_bound)) {
             const double gain=std::max(0.0,current-node.parent_bound)/node.distance;

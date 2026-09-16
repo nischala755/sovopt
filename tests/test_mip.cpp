@@ -90,6 +90,45 @@ TEST_CASE("Safe cover and clique cuts exclude only impossible binary combination
  const auto r=run(m);REQUIRE(r.status==SolveStatus::optimal);REQUIRE(r.objective==Catch::Approx(2));REQUIRE(r.verification.passed);
 }
 
+TEST_CASE("Single-row Chvatal-Gomory cuts preserve every bounded integer point and strengthen the relaxation","[mip][cuts]") {
+ auto m=example({1,1},{{"x",0,3,VariableType::integer},{"y",0,3,VariableType::integer}},{{"fractional",-infinity,1.5}},{{0,0,.6},{0,1,.6}});
+ const auto solved=run(m);
+ REQUIRE(solved.status==SolveStatus::optimal);
+ REQUIRE(solved.objective==Catch::Approx(2));
+ REQUIRE(solved.cuts_added>=1);
+ const auto stats=apply_safe_root_cuts(m,std::vector<double>{1.5,1.0});
+ REQUIRE(stats.chvatal_gomory>=1);
+ bool strengthened=false;
+ for(Index i=1;i<m.constraints.size();++i) {
+  const auto activity=m.matrix.multiply(std::vector<double>{1.5,1.0})[i];
+  if(activity>m.constraints[i].upper+1e-12) strengthened=true;
+ }
+ REQUIRE(strengthened);
+ for(int x=0;x<=3;++x)for(int y=0;y<=3;++y)if(.6*x+.6*y<=1.5) {
+  const auto activity=m.matrix.multiply(std::vector<double>{double(x),double(y)});
+  for(Index i=1;i<m.constraints.size();++i) REQUIRE(activity[i]<=m.constraints[i].upper+1e-12);
+ }
+}
+
+TEST_CASE("Single-row Chvatal-Gomory cuts preserve shifted two-sided integer domains","[mip][cuts][regression]") {
+ std::mt19937 rng(9127);
+ for(Index trial=0;trial<40;++trial) {
+  const int lower_x=int(rng()%3)-2,lower_y=int(rng()%3)-2;
+  const double a=(int(rng()%15)-7)/4.0,b=(int(rng()%15)-7)/4.0;
+  const double row_lower=(int(rng()%17)-8)/3.0,row_upper=row_lower+1.0+(rng()%20)/4.0;
+  auto m=example({0,0},{{"x",double(lower_x),double(lower_x+5),VariableType::integer},{"y",double(lower_y),double(lower_y+5),VariableType::integer}},{{"row",row_lower,row_upper}},{{0,0,a},{0,1,b}});
+  (void)apply_safe_root_cuts(m,std::vector<double>{lower_x+2.25,lower_y+2.75});
+  for(int x=lower_x;x<=lower_x+5;++x)for(int y=lower_y;y<=lower_y+5;++y) {
+   const double original_activity=a*x+b*y;
+   if(original_activity<row_lower||original_activity>row_upper) continue;
+   const auto activity=m.matrix.multiply(std::vector<double>{double(x),double(y)});
+   INFO("trial="<<trial<<" x="<<x<<" y="<<y<<" a="<<a<<" b="<<b);
+   for(Index i=1;i<m.constraints.size();++i)
+    REQUIRE(activity[i]<=m.constraints[i].upper+1e-12);
+  }
+ }
+}
+
 TEST_CASE("Feasibility pump finds and independently verifies an incumbent missed by one-shot rounding","[mip][heuristic]") {
  auto m=example({1,1},{{"x",0,1,VariableType::binary},{"y",0,1,VariableType::binary}},{{"capacity",-infinity,1.5}},{{0,0,1},{0,1,1}});
  SolverOptions o;o.cuts=false;o.node_limit=1;o.rounding=true;o.feasibility_pump=true;o.feasibility_pump_passes=4;

@@ -58,3 +58,10 @@ Enabling the deterministic eight-pass L1 feasibility pump did not change the
 iterations, with 363 nodes, bound 1181497.4999999998 and 2.83 solver seconds.
 The heuristic is therefore demonstrated on hand-verifiable regressions, but it
 does not resolve this difficult MIPLIB instance.
+
+Efficacy-filtered single-row Chvatal-Gomory separation produced no violated cut
+on the solved `flugpl` root relaxation. The measured result therefore remained
+100,000 iterations, 363 nodes, no incumbent and bound 1181497.4999999998. An
+initial experiment that installed every valid candidate before solving made the
+root LP consume the entire budget; that approach was rejected and is not part of
+the implementation.

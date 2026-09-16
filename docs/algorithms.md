@@ -87,8 +87,13 @@ original model. The pass limit is configurable and the heuristic can be disabled
 Branching supports most-fractional and learned up/down pseudo-cost scores. Child
 bounds use floor and ceil of the relaxation point. Pure-integer rows with exactly
 integral coefficients admit safe row-bound strengthening: finite upper bounds are
-floored and lower bounds ceiled with an outward ULP guard. This modular initial
-cut pass is deliberately limited; it is not a Gomory or MIR implementation.
+floored and lower bounds ceiled with an outward ULP guard. Root separation also
+generates single-row Chvatal-Gomory inequalities for general integer coefficients.
+Variables are shifted by finite integral lower bounds, both row sides are normalized
+to upper inequalities, and a bounded set of nonnegative row multipliers is tested.
+Only cuts violated by the solved root LP beyond a scaled efficacy tolerance are
+installed, followed by one root reoptimization. Tableau Gomory and general
+mixed-integer rounding cuts remain absent.
 
 Node, time, iteration and cancellation limits preserve the incumbent and best
 known open-node bound. MIP gap is measured in normalized objective space. When

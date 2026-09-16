@@ -16,12 +16,12 @@ Evidence date: 2026-09-14. Status reflects executable behavior, not class names.
 | Algorithms | Interior-point method | PARTIALLY IMPLEMENTED | Genuine infeasible-start primal-dual LP/QP path with residual verification; sparse KKT factorization and certificates remain |
 | Algorithms | First-order method | PARTIALLY IMPLEMENTED | Experimental non-authoritative CPU/CUDA workload |
 | Algorithms | Branch-and-bound | IMPLEMENTED | Deterministic best-bound queue and verified pruning |
-| Algorithms | Branch-and-cut | PARTIALLY IMPLEMENTED | Safe integer-row strengthening plus binary knapsack cover and conflict-clique cuts |
-| Algorithms | Cuts | PARTIALLY IMPLEMENTED | Cover and clique separators implemented for provably valid binary nonnegative rows; general Gomory and MIR remain absent |
+| Algorithms | Branch-and-cut | PARTIALLY IMPLEMENTED | Integer-row strengthening, efficacy-filtered single-row Chvatal-Gomory cuts, binary knapsack cover and conflict-clique cuts |
+| Algorithms | Cuts | PARTIALLY IMPLEMENTED | Valid row CG, cover and clique separation exists; tableau Gomory and general MIR remain absent |
 | Algorithms | Presolve | PARTIALLY IMPLEMENTED | Fixed, constant and singleton reductions with reconstruction |
-| Algorithms | Heuristics | PARTIALLY IMPLEMENTED | Rounding and fixed-integer LP repair |
+| Algorithms | Heuristics | PARTIALLY IMPLEMENTED | Rounding, fixed-integer LP repair and a deterministic budgeted L1 feasibility pump |
 | Algorithms | Node selection | IMPLEMENTED | Deterministic best-bound queue with most-fractional, learned pseudocost, and bounded strong-branch variable selection |
-| Algorithms | Dual simplex | PARTIALLY IMPLEMENTED | Compatible MILP child bases use dual-simplex repair with safe cold fallback; standalone selection and sparse basis updates remain |
+| Algorithms | Dual simplex | PARTIALLY IMPLEMENTED | Compatible MILP child bases use dual-simplex repair and product-form basis updates with safe cold fallback; standalone selection remains |
 | Industrial | Refinery scheduling | IMPLEMENTED | Seeded mathematical model generator |
 | Industrial | Crude blending | IMPLEMENTED | Seeded mathematical blend/demand/quality model generator and solve regression |
 | Industrial | Process optimization | IMPLEMENTED | Seeded staged-yield process-flow generator and solve regression |
