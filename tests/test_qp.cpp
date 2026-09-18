@@ -22,3 +22,8 @@ TEST_CASE("QP returns independently checked infeasibility and unboundedness cert
  auto unbounded=unconstrained(0,-1);r=solve_qp(unbounded);INFO(r.message);REQUIRE(r.status==SolveStatus::unbounded);REQUIRE_FALSE(r.ray.empty());REQUIRE(r.verification.passed);
  REQUIRE(verify_qp_unboundedness(unbounded,r.primal,r.ray).passed);auto corrupted=r.ray;corrupted[0]=0;REQUIRE_FALSE(verify_qp_unboundedness(unbounded,r.primal,corrupted).passed);
 }
+TEST_CASE("sparse LDL validation distinguishes singular PSD and positive-diagonal indefinite Hessians","[qp][sparse-psd]") {
+ QuadraticModel psd;psd.linear.variables={{"x",0,infinity},{"y",0,infinity}};psd.linear.objective={-2,-2};psd.linear.matrix=CscMatrix::from_triplets(0,2,{});psd.quadratic=CscMatrix::from_triplets(2,2,{{0,0,1},{0,1,1},{1,0,1},{1,1,1}});
+ auto solved=solve_qp(psd);INFO(solved.message);REQUIRE(solved.status==SolveStatus::optimal);REQUIRE(solved.verification.passed);REQUIRE(solved.primal[0]+solved.primal[1]==Approx(2).margin(1e-7));
+ psd.quadratic=CscMatrix::from_triplets(2,2,{{0,0,1},{0,1,2},{1,0,2},{1,1,1}});solved=solve_qp(psd);REQUIRE(solved.status==SolveStatus::numerical_failure);REQUIRE(solved.message.find("symmetric and convex")!=std::string::npos);
+}

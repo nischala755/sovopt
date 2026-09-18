@@ -4,7 +4,7 @@
 > A from-scratch optimization laboratory built for transparent, sovereign computation.
 
 [![C++20](https://img.shields.io/badge/C%2B%2B-20-00599C)](https://isocpp.org/)
-[![Tests](https://img.shields.io/badge/native%20tests-126%20passing-2ea44f)](#verification)
+[![Tests](https://img.shields.io/badge/native%20tests-127%20passing-2ea44f)](#verification)
 [![Python](https://img.shields.io/badge/Python%20tests-13%20passing-2ea44f)](#verification)
 [![Solver](https://img.shields.io/badge/external%20solver-none-ffb84d)](#trust-boundary)
 [![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https%3A%2F%2Fgithub.com%2Fnischala755%2Fsovopt)
@@ -67,10 +67,11 @@ primal, stationarity, complementarity, and objective verification. Infeasibility
 requires a verified Farkas certificate for the shared linear feasible set;
 unboundedness requires a verified feasible base and improving recession direction
 that also satisfies `Qd = 0`.
-Its Newton KKT system is assembled as sparse CSC and solved by the core sparse
-partial-pivot LU. Constraint canonicalization and Hessian PSD validation still
-use dense workspaces, so this remains a correctness foundation rather than a
-large-scale QP performance claim.
+Its constraint canonicalization, objective products, Hessian symmetry/PSD check,
+and Newton KKT assembly use sparse storage. KKT and sparse-LDL elimination can
+still create substantial fill and the current factorization lacks ordering, so
+this remains a correctness foundation rather than a large-scale QP performance
+claim.
 
 To validate CUDA on an NVIDIA Windows machine and retain reproducible evidence:
 

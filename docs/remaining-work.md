@@ -46,8 +46,10 @@
   cut-pool management, local search and tree restart/persistence. Bounded strong branching
   with real child LP probes and safe
   binary knapsack cover and conflict-clique separators are implemented.
-- Fully sparse QP canonicalization and PSD validation. Standard triangular QPS
-  `QUADOBJ` import is implemented; other vendor quadratic sections remain out of scope.
+- Fill-reducing ordering and stronger sparse QP factorization safeguards.
+  Canonicalization, symmetry/PSD validation and KKT assembly now use sparse
+  storage. Standard triangular QPS `QUADOBJ` import is implemented; other vendor
+  quadratic sections remain out of scope.
   Flight Recorder v2 now persists and independently replays optimal KKT,
   Farkas infeasibility and Hessian-null recession certificates in original-model
   coordinates.

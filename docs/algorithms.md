@@ -59,9 +59,10 @@ system for the quadratic Hessian, equality rows and the inequality diagonal
 scaling. KKT entries are accumulated in sparse ordered rows, canonicalized to
 CSC and factorized by the core sparse partial-pivot LU. Factorization count and
 maximum assembled KKT nonzeros are returned in `QpResult`; the sparse basis solve
-also performs residual refinement. Constraint canonicalization and the current
-positive-semidefinite Hessian check still allocate dense workspaces, so the full
-QP pipeline is not yet a large-scale sparse implementation.
+also performs residual refinement. Constraint canonicalization and Hessian
+symmetry/positive-semidefinite validation use sparse row maps and sparse LDL
+updates. Elimination fill is not yet controlled by a fill-reducing ordering, so
+the QP pipeline is not yet an industrial-scale sparse implementation.
 
 Before Newton iterations, the QP path solves a zero-objective linear feasibility
 problem. A verified Phase-I Farkas certificate proves QP infeasibility because
