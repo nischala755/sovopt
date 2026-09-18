@@ -63,6 +63,14 @@ also performs residual refinement. Constraint canonicalization and the current
 positive-semidefinite Hessian check still allocate dense workspaces, so the full
 QP pipeline is not yet a large-scale sparse implementation.
 
+Before Newton iterations, the QP path solves a zero-objective linear feasibility
+problem. A verified Phase-I Farkas certificate proves QP infeasibility because
+the quadratic objective does not change the feasible set. For unboundedness it
+constructs the original model's recession cone, adds one equality row per Hessian
+row to enforce `Qd = 0`, and searches for an improving direction with the native
+LP solver. The independent checker then verifies the feasible base, every row and
+bound recession sign, strict objective improvement, and the Hessian-null residual.
+
 ## Certificates and numerical policy
 
 All terminal mathematical claims are rechecked against the original model by an

@@ -46,10 +46,9 @@
   cut-pool management, local search and tree restart/persistence. Bounded strong branching
   with real child LP probes and safe
   binary knapsack cover and conflict-clique separators are implemented.
-- Fully sparse QP canonicalization and PSD validation, QP file import,
-  infeasibility and unboundedness certificates, and Flight Recorder QP schemas. Optimal QP KKT
-  certificates now use original-model row and variable coordinates.
-- Crude blending, production-planning and supply-chain demonstrations.
+- Fully sparse QP canonicalization and PSD validation, QP file import and Flight
+  Recorder QP schemas. Optimal QP KKT, Farkas infeasibility and Hessian-null
+  recession certificates now use original-model coordinates.
 - Mittelmann manifest and measured benchmark run.
 
 ## D. Needs validation

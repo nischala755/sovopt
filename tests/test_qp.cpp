@@ -16,3 +16,9 @@ TEST_CASE("interior point factors diagonal KKT systems through sparse storage","
  const auto r=solve_qp(p);INFO(r.message);REQUIRE(r.status==SolveStatus::optimal);REQUIRE(r.verification.passed);
  REQUIRE(r.kkt_factorizations>=1);REQUIRE(r.max_kkt_nonzeros==n);for(double x:r.primal)REQUIRE(x==Approx(1).margin(1e-7));
 }
+TEST_CASE("QP returns independently checked infeasibility and unboundedness certificates","[qp][certificates]") {
+ auto infeasible=unconstrained(2,0);infeasible.linear.constraints={{"lower",1,infinity},{"upper",-infinity,0}};infeasible.linear.matrix=CscMatrix::from_triplets(2,1,{{0,0,1},{1,0,1}});
+ auto r=solve_qp(infeasible);INFO(r.message);REQUIRE(r.status==SolveStatus::infeasible);REQUIRE(r.certificate_verification.passed);
+ auto unbounded=unconstrained(0,-1);r=solve_qp(unbounded);INFO(r.message);REQUIRE(r.status==SolveStatus::unbounded);REQUIRE_FALSE(r.ray.empty());REQUIRE(r.verification.passed);
+ REQUIRE(verify_qp_unboundedness(unbounded,r.primal,r.ray).passed);auto corrupted=r.ray;corrupted[0]=0;REQUIRE_FALSE(verify_qp_unboundedness(unbounded,r.primal,corrupted).passed);
+}
