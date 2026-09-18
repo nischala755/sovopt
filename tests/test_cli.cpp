@@ -29,6 +29,9 @@ TEST_CASE("CLI exposes the verified interior point LP method", "[cli][qp]") {
     const auto r=run({"solve",lp,"--json","--method","interior_point"}); INFO(r.err);
     REQUIRE(r.code==0); REQUIRE(r.out.find("\"status\":\"optimal\"")!=std::string::npos);
     REQUIRE(r.out.find("\"verified\":true")!=std::string::npos);
+    const auto bundle=std::filesystem::temp_directory_path()/"astraniti-cli-interior-record.astra";std::filesystem::remove_all(bundle);const auto bundle_text=bundle.string();
+    const auto recorded=run({"solve",lp,"--method","interior_point","--record",bundle_text});INFO(recorded.err);REQUIRE(recorded.code==0);
+    const auto replayed=run({"replay",bundle_text,"--reverify"});INFO(replayed.err);REQUIRE(replayed.code==0);REQUIRE(replayed.out.find("Reverification: PASS")!=std::string::npos);std::filesystem::remove_all(bundle);
 }
 TEST_CASE("CLI inspects example with hand-counted statistics and validates without solving", "[cli]") {
     const auto r = run({"inspect",lp,"--json"});

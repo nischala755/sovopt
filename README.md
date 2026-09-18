@@ -4,7 +4,7 @@
 > A from-scratch optimization laboratory built for transparent, sovereign computation.
 
 [![C++20](https://img.shields.io/badge/C%2B%2B-20-00599C)](https://isocpp.org/)
-[![Tests](https://img.shields.io/badge/native%20tests-121%20passing-2ea44f)](#verification)
+[![Tests](https://img.shields.io/badge/native%20tests-124%20passing-2ea44f)](#verification)
 [![Python](https://img.shields.io/badge/Python%20tests-13%20passing-2ea44f)](#verification)
 [![Solver](https://img.shields.io/badge/external%20solver-none-ffb84d)](#trust-boundary)
 [![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https%3A%2F%2Fgithub.com%2Fnischala755%2Fsovopt)
@@ -155,6 +155,12 @@ SHA-256. Replay validates integrity before reading mathematical results;
 `--reverify` invokes the independent original-model verifier again. The REST API
 can create, replay and download bundles, and the dashboard renders the recorded
 timeline and integrity state from those API responses.
+
+Format version 2 also records convex-QP Hessians as canonical sparse triplets,
+QP KKT factorization statistics, and the terminal proof appropriate to the
+result: KKT multipliers, a Farkas certificate, or a Hessian-null improving ray.
+QP replay reconstructs that model and independently checks the proof. Version 1
+linear bundles remain replayable.
 
 ### Example statistics
 

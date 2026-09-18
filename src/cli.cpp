@@ -141,15 +141,16 @@ int run_cli(std::span<const std::string_view> args, std::ostream& output, std::o
             config.solver.telemetry=[&](const TelemetryEvent& event){events.push_back(event);if(existing)existing(event);};
             const bool integer=std::any_of(model.variables.begin(),model.variables.end(),[](const auto& v){return v.type!=VariableType::continuous;});
             SolveResult solved;
+            std::optional<QpResult> interior_point_result;
             if(integer) solved=solve_mip(model,config.solver);
             else if(config.solver.method=="interior_point") {
-                const auto ip=solve_interior_point(model,config.solver); solved.status=ip.status; solved.message=ip.message;
+                interior_point_result=solve_interior_point(model,config.solver); const auto& ip=*interior_point_result; solved.status=ip.status; solved.message=ip.message;
                 solved.primal=ip.primal; solved.objective=ip.objective; solved.iterations=ip.iterations; solved.runtime_seconds=ip.runtime_seconds;
                 solved.verification.passed=ip.verification.passed; solved.verification.objective=ip.verification.objective;
                 solved.verification.primal_residual=ip.verification.primal_residual; solved.verification.dual_residual=ip.verification.stationarity_residual;
             } else solved=solve_lp(model,config.solver);
-            if(record_path&&config.solver.method=="interior_point") throw ConfigurationError("Flight Recorder for interior-point results requires QP certificate schema support");
-            if(record_path) record_solve(*record_path,std::filesystem::path(path),model,config.solver,solved,events);
+            if(record_path&&interior_point_result)record_qp_solve(*record_path,std::filesystem::path(path),QuadraticModel{model,CscMatrix::from_triplets(model.variables.size(),model.variables.size(),{})},config.solver,*interior_point_result,events);
+            else if(record_path) record_solve(*record_path,std::filesystem::path(path),model,config.solver,solved,events);
             print_solution(result,model,solved,json);
             output<<result.str();
             if(!output) throw std::runtime_error("output write failure");
