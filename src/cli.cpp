@@ -15,12 +15,13 @@
 #include <cstdlib>
 #include <cmath>
 #include <algorithm>
+#include <cctype>
 
 namespace sovereign {
 namespace {
 constexpr std::string_view usage =
     "AstraNiti Sovereign Optimizer 0.1.0\n"
-    "Usage: sovereign inspect|validate|solve MODEL.mps [--json] [--config FILE]\n"
+    "Usage: sovereign inspect|validate|solve MODEL.mps|MODEL.qps [--json] [--config FILE]\n"
     "       [--mps-format free|fixed]\n"
     "       solve options: [--method auto|simplex|interior_point] [--branching most_fractional|pseudocost|strong]\n"
     "       [--time-limit SEC] [--node-limit N] [--iteration-limit N] [--mip-gap GAP]\n"
@@ -130,7 +131,10 @@ int run_cli(std::span<const std::string_view> args, std::ostream& output, std::o
         if(node_limit) config.solver.node_limit=*node_limit; if(iteration_limit) config.solver.iteration_limit=*iteration_limit;
         validate_options(config.solver);
         Logger logger(errors,config.log_level);
-        const auto model = read_mps_file(std::filesystem::path(path),config.mps);
+        const auto model_path=std::filesystem::path(path);auto extension=model_path.extension().string();std::transform(extension.begin(),extension.end(),extension.begin(),[](unsigned char c){return static_cast<char>(std::tolower(c));});
+        std::optional<QuadraticModel> quadratic_model;Model linear_model;
+        if(extension==".qps")quadratic_model=read_qps_file(model_path,config.mps);else linear_model=read_mps_file(model_path,config.mps);
+        const Model& model=quadratic_model?quadratic_model->linear:linear_model;
         logger.write(LogLevel::info,"Model loaded and structurally validated: " + model.name);
         std::ostringstream result;
         result.imbue(std::locale::classic()); result << std::setprecision(17);
@@ -142,14 +146,18 @@ int run_cli(std::span<const std::string_view> args, std::ostream& output, std::o
             const bool integer=std::any_of(model.variables.begin(),model.variables.end(),[](const auto& v){return v.type!=VariableType::continuous;});
             SolveResult solved;
             std::optional<QpResult> interior_point_result;
-            if(integer) solved=solve_mip(model,config.solver);
+            if(quadratic_model&&integer)throw ConfigurationError("MIQP is not implemented; QPS variables must be continuous");
+            if(quadratic_model&&config.solver.method=="simplex")throw ConfigurationError("quadratic objectives require method auto or interior_point");
+            if(quadratic_model) {
+                interior_point_result=solve_qp(*quadratic_model,config.solver);const auto& ip=*interior_point_result;solved.status=ip.status;solved.message=ip.message;solved.primal=ip.primal;solved.ray=ip.ray;solved.certificate=ip.certificate;solved.objective=ip.objective;solved.iterations=ip.iterations;solved.runtime_seconds=ip.runtime_seconds;solved.verification.passed=ip.status==SolveStatus::infeasible?ip.certificate_verification.passed:ip.verification.passed;solved.verification.objective=ip.verification.objective;solved.verification.primal_residual=ip.verification.primal_residual;solved.verification.dual_residual=ip.verification.stationarity_residual;
+            } else if(integer) solved=solve_mip(model,config.solver);
             else if(config.solver.method=="interior_point") {
                 interior_point_result=solve_interior_point(model,config.solver); const auto& ip=*interior_point_result; solved.status=ip.status; solved.message=ip.message;
                 solved.primal=ip.primal; solved.objective=ip.objective; solved.iterations=ip.iterations; solved.runtime_seconds=ip.runtime_seconds;
                 solved.verification.passed=ip.verification.passed; solved.verification.objective=ip.verification.objective;
                 solved.verification.primal_residual=ip.verification.primal_residual; solved.verification.dual_residual=ip.verification.stationarity_residual;
             } else solved=solve_lp(model,config.solver);
-            if(record_path&&interior_point_result)record_qp_solve(*record_path,std::filesystem::path(path),QuadraticModel{model,CscMatrix::from_triplets(model.variables.size(),model.variables.size(),{})},config.solver,*interior_point_result,events);
+            if(record_path&&interior_point_result)record_qp_solve(*record_path,model_path,quadratic_model?*quadratic_model:QuadraticModel{model,CscMatrix::from_triplets(model.variables.size(),model.variables.size(),{})},config.solver,*interior_point_result,events);
             else if(record_path) record_solve(*record_path,std::filesystem::path(path),model,config.solver,solved,events);
             print_solution(result,model,solved,json);
             output<<result.str();

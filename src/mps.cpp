@@ -25,13 +25,14 @@ std::vector<std::string> words(const std::string& line) {
     }
     return result;
 }
-enum class Section { none, name, sense, objective, rows, columns, rhs, ranges, bounds, end };
+enum class Section { none, name, sense, objective, rows, columns, rhs, ranges, bounds, quadratic, end };
 class Reader {
 public:
-    explicit Reader(const MpsOptions& options) : options_(options) {}
-    Model read(std::istream& input);
+    explicit Reader(const MpsOptions& options,bool allow_quadratic) : options_(options),allow_quadratic_(allow_quadratic) {}
+    QuadraticModel read(std::istream& input);
 private:
     MpsOptions options_;
+    bool allow_quadratic_ = false;
     Index line_ = 0, entry_count_ = 0;
     Section section_ = Section::none;
     int rank_ = 0;
@@ -44,6 +45,8 @@ private:
     std::vector<double> rhs_;
     std::vector<std::optional<double>> ranges_;
     std::vector<Triplet> entries_;
+    std::vector<Triplet> quadratic_entries_;
+    std::unordered_set<std::string> quadratic_pairs_;
     struct BoundsSeen { bool lower = false; bool upper = false; };
     std::vector<BoundsSeen> bounds_seen_;
     std::optional<std::string> rhs_name_, range_name_, bound_name_;
@@ -97,7 +100,8 @@ void Reader::header(const std::vector<std::string>& t) {
     else if (key == "RHS") { next_rank = 3; section_ = Section::rhs; }
     else if (key == "RANGES") { next_rank = 4; section_ = Section::ranges; }
     else if (key == "BOUNDS") { next_rank = 5; section_ = Section::bounds; }
-    else if (key == "ENDATA") { next_rank = 6; section_ = Section::end; }
+    else if (key == "QUADOBJ") { if(!allow_quadratic_)fail("unsupported section: QUADOBJ");next_rank=6;section_=Section::quadratic; }
+    else if (key == "ENDATA") { next_rank = 7; section_ = Section::end; }
     else fail("unsupported section: " + key);
     if (next_rank <= rank_ || (next_rank >= 2 && !rows_seen_) || (next_rank >= 3 && !columns_seen_)) fail("invalid section order");
     if (integer_region_ && next_rank > 2) fail("unclosed INTORG marker");
@@ -192,6 +196,18 @@ void Reader::data(std::vector<std::string> t) {
         return;
     }
     if (section_ == Section::bounds) { bounds(t); return; }
+    if (section_ == Section::quadratic) {
+        if(t.size()!=3)fail("expected two variables and one QUADOBJ value");
+        const auto first=column_indices_.find(t[0]),second=column_indices_.find(t[1]);
+        if(first==column_indices_.end())fail("unknown quadratic variable: "+t[0]);
+        if(second==column_indices_.end())fail("unknown quadratic variable: "+t[1]);
+        if(entry_count_>=options_.max_entries)fail("coefficient entry limit exceeded");++entry_count_;
+        const auto lo=std::min(first->second,second->second),hi=std::max(first->second,second->second);
+        const auto key=std::to_string(lo)+":"+std::to_string(hi);if(!quadratic_pairs_.insert(key).second)fail("duplicate quadratic variable pair");
+        const auto value=number(t[2]);quadratic_entries_.push_back({first->second,second->second,value});
+        if(first->second!=second->second)quadratic_entries_.push_back({second->second,first->second,value});
+        return;
+    }
     if (section_ != Section::columns && section_ != Section::rhs && section_ != Section::ranges) fail("data outside supported section");
     if (t.size() != 3 && t.size() != 5) fail("expected one or two row/value pairs");
     if (section_ == Section::columns && t[1] == "'MARKER'") {
@@ -233,7 +249,7 @@ void Reader::data(std::vector<std::string> t) {
         }
     }
 }
-Model Reader::read(std::istream& input) {
+QuadraticModel Reader::read(std::istream& input) {
     if (options_.max_line_length == 0 || options_.max_entries == 0) fail("parser limits must be positive");
     if (options_.format != MpsFormat::free && options_.format != MpsFormat::fixed) fail("invalid MPS format");
     std::string line;
@@ -279,13 +295,18 @@ Model Reader::read(std::istream& input) {
         model_.matrix = CscMatrix::from_triplets(model_.constraints.size(),model_.variables.size(),std::move(entries_));
         require_valid(model_);
     } catch (const InvalidModelError& error) { fail(error.what()); }
-    return std::move(model_);
+    QuadraticModel result;result.linear=std::move(model_);
+    try {result.quadratic=CscMatrix::from_triplets(result.linear.variables.size(),result.linear.variables.size(),std::move(quadratic_entries_));}
+    catch(const std::exception& error){fail(error.what());}
+    return result;
 }
 }
-Model read_mps(std::istream& input, const MpsOptions& options) { return Reader(options).read(input); }
+Model read_mps(std::istream& input, const MpsOptions& options) { return Reader(options,false).read(input).linear; }
 Model read_mps_file(const std::filesystem::path& path, const MpsOptions& options) {
     std::ifstream input(path,std::ios::binary);
     if (!input) throw ModelParseError(0,"cannot open file: " + path.string());
     return read_mps(input,options);
 }
+QuadraticModel read_qps(std::istream& input,const MpsOptions& options){return Reader(options,true).read(input);}
+QuadraticModel read_qps_file(const std::filesystem::path& path,const MpsOptions& options){std::ifstream input(path,std::ios::binary);if(!input)throw ModelParseError(0,"cannot open file: "+path.string());return read_qps(input,options);}
 }

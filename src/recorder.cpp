@@ -173,7 +173,7 @@ ReplayReport replay_solve(const std::filesystem::path& bundle,bool reverify) {
             report.timeline.push_back(std::move(event));begin=end;
         }
         if(!reverify){report.message="integrity PASS";return report;}
-        const auto model=read_mps_file(bundle/"model.mps");
+        const auto model=report.problem_kind=="quadratic"?read_qps_file(bundle/"model.mps").linear:read_mps_file(bundle/"model.mps");
         if(fingerprint(model).hash_hex!=field_string(read_file(bundle/"model_fingerprint.json"),"hash")){report.integrity_passed=false;report.message="model fingerprint does not match stored model";return report;}
         const auto primal=field_array(solution,"primal");
         const auto certificate_json=read_file(bundle/"certificate.json");DualCertificate certificate{field_array(certificate_json,"row_lower"),field_array(certificate_json,"row_upper"),field_array(certificate_json,"variable_lower"),field_array(certificate_json,"variable_upper")};

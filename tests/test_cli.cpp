@@ -11,6 +11,7 @@ Result run(std::vector<std::string_view> args) {
     std::ostringstream out,err; const int code = run_cli(args,out,err); return {code,out.str(),err.str()};
 }
 const std::string lp = std::string(SOVEREIGN_SOURCE_DIR) + "/examples/small_lp.mps";
+const std::string qps = std::string(SOVEREIGN_SOURCE_DIR) + "/examples/convex_qp.qps";
 }
 TEST_CASE("CLI help version and unsupported commands report honest capabilities", "[cli]") {
     REQUIRE(run({"--help"}).code == 0);
@@ -32,6 +33,9 @@ TEST_CASE("CLI exposes the verified interior point LP method", "[cli][qp]") {
     const auto bundle=std::filesystem::temp_directory_path()/"astraniti-cli-interior-record.astra";std::filesystem::remove_all(bundle);const auto bundle_text=bundle.string();
     const auto recorded=run({"solve",lp,"--method","interior_point","--record",bundle_text});INFO(recorded.err);REQUIRE(recorded.code==0);
     const auto replayed=run({"replay",bundle_text,"--reverify"});INFO(replayed.err);REQUIRE(replayed.code==0);REQUIRE(replayed.out.find("Reverification: PASS")!=std::string::npos);std::filesystem::remove_all(bundle);
+    const auto qp_bundle=std::filesystem::temp_directory_path()/"astraniti-cli-qps-record.astra";std::filesystem::remove_all(qp_bundle);const auto qp_bundle_text=qp_bundle.string();
+    const auto q=run({"solve",qps,"--json","--record",qp_bundle_text});INFO(q.err);REQUIRE(q.code==0);REQUIRE(q.out.find("\"verified\":true")!=std::string::npos);
+    const auto qr=run({"replay",qp_bundle_text,"--reverify"});INFO(qr.err);REQUIRE(qr.code==0);REQUIRE(qr.out.find("Reverification: PASS")!=std::string::npos);std::filesystem::remove_all(qp_bundle);
 }
 TEST_CASE("CLI inspects example with hand-counted statistics and validates without solving", "[cli]") {
     const auto r = run({"inspect",lp,"--json"});

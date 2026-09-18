@@ -1,4 +1,5 @@
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/catch_approx.hpp>
 #include <sovereign/mps.hpp>
 #include <sovereign/errors.hpp>
 #include <sstream>
@@ -9,6 +10,7 @@ namespace {
 Model parse(const std::string& s, MpsOptions options = {}) {
     std::istringstream in(s); return read_mps(in, options);
 }
+QuadraticModel parse_qps(const std::string& s,MpsOptions options={}) {std::istringstream in(s);return read_qps(in,options);}
 const std::string prefix = "NAME T\nROWS\n N OBJ\n L R\nCOLUMNS\n x OBJ 3 R 2\n";
 std::string card(std::string f1, std::string f2, std::string f3, std::string f4, std::string f5 = {}, std::string f6 = {}) {
     std::string line(61,' ');
@@ -135,4 +137,19 @@ TEST_CASE("MPS file reader does not truncate at Windows Ctrl-Z", "[mps][regressi
     file << prefix << "ENDATA\n" << '\x1a' << "trailing garbage\n";
     file.close(); REQUIRE(file.good());
     REQUIRE_THROWS_AS(read_mps_file(temp.path), ModelParseError);
+}
+
+TEST_CASE("QPS reads a triangular QUADOBJ Hessian and solves the represented objective", "[mps][qps]") {
+    const auto qp=parse_qps("NAME QDEMO\nROWS\n N OBJ\nCOLUMNS\n x OBJ -4\n y OBJ -6\nBOUNDS\n FR b x\n FR b y\nQUADOBJ\n x x 2\n y x 0.5\n y y 2\nENDATA\n");
+    REQUIRE(qp.linear.variables.size()==2);REQUIRE(qp.quadratic.nonzeros()==4);
+    const auto first=qp.quadratic.column(0);REQUIRE(first.rows.size()==2);REQUIRE(first.rows[0]==0);REQUIRE(first.rows[1]==1);REQUIRE(first.values[0]==2);REQUIRE(first.values[1]==0.5);
+    const auto solved=solve_qp(qp);INFO(solved.message);REQUIRE(solved.status==SolveStatus::optimal);REQUIRE(solved.verification.passed);
+    REQUIRE(solved.primal[0]==Catch::Approx(4.0/3.0).margin(1e-7));REQUIRE(solved.primal[1]==Catch::Approx(8.0/3.0).margin(1e-7));
+}
+
+TEST_CASE("QPS rejects ambiguous malformed and non-opted-in quadratic sections", "[mps][qps]") {
+    const std::string base="NAME Q\nROWS\n N OBJ\nCOLUMNS\n x OBJ -1\n y OBJ -1\nQUADOBJ\n";
+    REQUIRE_THROWS_AS(parse(base+" x x 2\nENDATA\n"),ModelParseError);
+    for(const auto& tail:{" z x 1\nENDATA\n"," x x nan\nENDATA\n"," x y 1\n y x 1\nENDATA\n"," x y 1 2\nENDATA\n"})REQUIRE_THROWS_AS(parse_qps(base+tail),ModelParseError);
+    MpsOptions limited;limited.max_entries=2;REQUIRE_THROWS_AS(parse_qps(base+" x x 1\nENDATA\n",limited),ModelParseError);
 }

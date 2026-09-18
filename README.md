@@ -4,7 +4,7 @@
 > A from-scratch optimization laboratory built for transparent, sovereign computation.
 
 [![C++20](https://img.shields.io/badge/C%2B%2B-20-00599C)](https://isocpp.org/)
-[![Tests](https://img.shields.io/badge/native%20tests-124%20passing-2ea44f)](#verification)
+[![Tests](https://img.shields.io/badge/native%20tests-126%20passing-2ea44f)](#verification)
 [![Python](https://img.shields.io/badge/Python%20tests-13%20passing-2ea44f)](#verification)
 [![Solver](https://img.shields.io/badge/external%20solver-none-ffb84d)](#trust-boundary)
 [![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https%3A%2F%2Fgithub.com%2Fnischala755%2Fsovopt)
@@ -57,9 +57,11 @@ The continuous LP interior-point path is available explicitly:
 
 ```sh
 sovereign solve model.mps --method interior_point
+sovereign solve model.qps
 ```
 
-The C++ `QuadraticModel` API accepts a symmetric positive-semidefinite sparse
+The CLI and C++ `read_qps` API accept standard triangular `QUADOBJ` records using
+the `0.5 x'Qx` convention. The C++ `QuadraticModel` API accepts a symmetric positive-semidefinite sparse
 Hessian and returns original-coordinate bound multipliers only after independent
 primal, stationarity, complementarity, and objective verification. Infeasibility
 requires a verified Farkas certificate for the shared linear feasible set;

@@ -6,7 +6,7 @@ Evidence date: 2026-09-14. Status reflects executable behavior, not class names.
 |---|---|---|---|
 | Solver core | LP | IMPLEMENTED | Two-phase revised simplex; three verified Netlib instances |
 | Solver core | MILP | PARTIALLY IMPLEMENTED | Verified small tests; MIPLIB flugpl reaches iteration limit |
-| Solver core | QP | PARTIALLY IMPLEMENTED | Convex predictor-corrector solver, sparse CSC KKT factorization, optimal KKT, Farkas infeasibility and Hessian-null recession certificates pass tests; canonicalization/PSD validation remain dense |
+| Solver core | QP | PARTIALLY IMPLEMENTED | QPS `QUADOBJ` import, convex predictor-corrector solver, sparse CSC KKT factorization, optimal KKT, Farkas infeasibility and Hessian-null recession certificates pass tests; canonicalization/PSD validation remain dense |
 | Solver core | Sparse computation | IMPLEMENTED | Canonical CSC and sparse-row LU |
 | Solver core | Numerical stability | PARTIALLY IMPLEMENTED | Scaling, Harris ratio, refinement and conservative certificates; industrial scale unproved |
 | Solver core | Scalability | PARTIALLY IMPLEMENTED | Sparse storage; broad large-scale evidence absent |

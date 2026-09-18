@@ -14,10 +14,10 @@ code exists but this host cannot validate it.
 | C++ solver | C++20 core library and CLI executable | `CMakeLists.txt`, `src/` | Implemented | Industrial scale is not established |
 | Sparse matrix | Canonical immutable CSC, products and transpose products | `include/sovereign/sparse_matrix.hpp`, `src/sparse_matrix.cpp` | Implemented | No parallel SpMV in authoritative solver |
 | Model representation | Two-sided rows, bounds, objective sense, integer domains | `include/sovereign/model.hpp` | Implemented | No quadratic objective structure |
-| MPS parser | Strict free/fixed MPS reader with resource limits | `src/mps.cpp` | Implemented | Quadratic MPS sections are unsupported |
+| MPS/QPS parser | Strict free/fixed reader with resource limits and triangular `QUADOBJ` support | `src/mps.cpp` | Implemented | Other vendor quadratic sections are unsupported |
 | LP | Two-phase primal revised simplex with Harris ratio selection, refinement and original-space verification | `src/lp.cpp`, `src/lp_standard.cpp` | Partial | Dual simplex and sparse update schemes are absent |
 | MILP | Deterministic best-bound branch-and-bound over verified LP relaxations | `src/mip.cpp` | Partial | Single-threaded; limited cuts and primal heuristic |
-| QP | Convex quadratic model and infeasible-start primal-dual predictor-corrector method | `include/sovereign/qp.hpp`, `src/qp.cpp` | Implemented for small convex QPs | Sparse KKT factorization is present, but canonicalization and PSD validation remain dense; QP MPS extensions are absent |
+| QP | Convex quadratic model, QPS `QUADOBJ` import and infeasible-start primal-dual predictor-corrector method | `include/sovereign/qp.hpp`, `src/qp.cpp` | Implemented for small convex QPs | Sparse KKT factorization is present, but canonicalization and PSD validation remain dense |
 | Presolve | Fixed substitution, constant rows, singleton tightening, reconstruction | `src/presolve.cpp` | Partial | Duplicate rows, general implied bounds, aggregation and richer postsolve are absent |
 | Scaling | Row/column scaling in LP standard-form conversion | `src/lp_standard.cpp` | Partial | No iterative equilibration report or condition metrics |
 | Numerical tolerances | Explicit primal, dual, integrality and pivot tolerances | `include/sovereign/solution.hpp` | Implemented | No method-specific stability policy |

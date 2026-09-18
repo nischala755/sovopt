@@ -1,0 +1,15 @@
+* Minimize -4x - 6y + 0.5 [x y] [[2,.5],[.5,2]] [x y]'.
+NAME CONVEX_QP
+ROWS
+ N OBJ
+COLUMNS
+ x OBJ -4
+ y OBJ -6
+BOUNDS
+ FR bnd x
+ FR bnd y
+QUADOBJ
+ x x 2
+ y x 0.5
+ y y 2
+ENDATA
