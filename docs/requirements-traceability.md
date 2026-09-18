@@ -6,14 +6,14 @@ Evidence date: 2026-09-14. Status reflects executable behavior, not class names.
 |---|---|---|---|
 | Solver core | LP | IMPLEMENTED | Two-phase revised simplex; three verified Netlib instances |
 | Solver core | MILP | PARTIALLY IMPLEMENTED | Verified small tests; MIPLIB flugpl reaches iteration limit |
-| Solver core | QP | PARTIALLY IMPLEMENTED | Convex QP predictor-corrector solver and independently reverified original-coordinate KKT certificates pass hand tests; Newton systems are dense and non-optimal certificates are absent |
+| Solver core | QP | PARTIALLY IMPLEMENTED | Convex predictor-corrector solver, sparse CSC KKT factorization and independently reverified optimal KKT certificates pass tests; canonicalization/PSD validation remain dense and non-optimal certificates are absent |
 | Solver core | Sparse computation | IMPLEMENTED | Canonical CSC and sparse-row LU |
 | Solver core | Numerical stability | PARTIALLY IMPLEMENTED | Scaling, Harris ratio, refinement and conservative certificates; industrial scale unproved |
 | Solver core | Scalability | PARTIALLY IMPLEMENTED | Sparse storage; broad large-scale evidence absent |
 | Solver core | Multi-core | NOT IMPLEMENTED | Authoritative LP/MILP paths are single-threaded |
 | Solver core | GPU | BLOCKED | CUDA kernels, CPU cross-check tests, probe executable and reproducible validation pack exist; actual NVIDIA measurement requires the target laptop |
 | Algorithms | Revised simplex | IMPLEMENTED | Phase I/II, basis, pricing, ratio, pivot, checked tableau extraction and verification |
-| Algorithms | Interior-point method | PARTIALLY IMPLEMENTED | Genuine infeasible-start primal-dual LP/QP path with residual verification; sparse KKT factorization and certificates remain |
+| Algorithms | Interior-point method | PARTIALLY IMPLEMENTED | Genuine infeasible-start primal-dual LP/QP path with sparse KKT factorization and residual verification; non-optimal certificates remain |
 | Algorithms | First-order method | PARTIALLY IMPLEMENTED | Experimental non-authoritative CPU/CUDA workload |
 | Algorithms | Branch-and-bound | IMPLEMENTED | Deterministic best-bound queue and verified pruning |
 | Algorithms | Branch-and-cut | PARTIALLY IMPLEMENTED | Integer-row strengthening, row CG, one conservative root GMI tableau round, binary cover and conflict-clique cuts |

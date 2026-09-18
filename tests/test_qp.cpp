@@ -9,3 +9,10 @@ TEST_CASE("interior point LP path solves a bounded linear model","[qp][lp]") { M
 TEST_CASE("QP rejects a nonsymmetric or nonconvex Hessian","[qp]") { auto p=unconstrained(-1,0); REQUIRE(solve_qp(p).status==SolveStatus::numerical_failure); p.linear.variables.push_back({"y",-infinity,infinity}); p.linear.objective.push_back(0); p.linear.matrix=CscMatrix::from_triplets(0,2,{}); p.quadratic=CscMatrix::from_triplets(2,2,{{0,1,1}}); REQUIRE(solve_qp(p).status==SolveStatus::numerical_failure); }
 TEST_CASE("interior point handles a concave maximization QP","[qp]") { auto p=unconstrained(-2,4); p.linear.sense=ObjectiveSense::maximize; const auto r=solve_qp(p); INFO(r.message); REQUIRE(r.status==SolveStatus::optimal); REQUIRE(r.primal[0]==Approx(2).margin(1e-7)); REQUIRE(r.objective==Approx(4).margin(1e-7)); REQUIRE(r.verification.passed); }
 TEST_CASE("QP certificate is independently reverified and corruption is rejected","[qp][verification]") { auto p=unconstrained(2,-6);p.linear.variables[0].lower=0;p.linear.variables[0].upper=2;const auto solved=solve_qp(p);REQUIRE(solved.status==SolveStatus::optimal);REQUIRE(verify_qp_optimality(p,solved.primal,solved.objective,solved.certificate).passed);auto bad=solved.certificate;bad.variable_upper[0]+=1;REQUIRE_FALSE(verify_qp_optimality(p,solved.primal,solved.objective,bad).passed); }
+TEST_CASE("interior point factors diagonal KKT systems through sparse storage","[qp][sparse-kkt]") {
+ constexpr Index n=256;QuadraticModel p;p.linear.variables.reserve(n);p.linear.objective.assign(n,-2);std::vector<Triplet> diagonal;
+ for(Index j=0;j<n;++j){p.linear.variables.push_back({"x"+std::to_string(j),-infinity,infinity});diagonal.push_back({j,j,2});}
+ p.linear.matrix=CscMatrix::from_triplets(0,n,{});p.quadratic=CscMatrix::from_triplets(n,n,std::move(diagonal));
+ const auto r=solve_qp(p);INFO(r.message);REQUIRE(r.status==SolveStatus::optimal);REQUIRE(r.verification.passed);
+ REQUIRE(r.kkt_factorizations>=1);REQUIRE(r.max_kkt_nonzeros==n);for(double x:r.primal)REQUIRE(x==Approx(1).margin(1e-7));
+}

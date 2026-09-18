@@ -11,6 +11,7 @@ struct QpVerificationReport {
 struct QpResult {
     SolveStatus status=SolveStatus::numerical_failure; std::string message;
     std::vector<double> primal; double objective=infinity; Index iterations=0;
+    Index kkt_factorizations=0, max_kkt_nonzeros=0;
     double runtime_seconds=0; QpVerificationReport verification;
     DualCertificate certificate;
 };

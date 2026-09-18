@@ -52,6 +52,17 @@ variable and restoration coefficient. A column is marked as an integer lattice
 only when the transformation is a single unit-sign term with an integral shift;
 scaled and split integer columns are conservatively rejected for cut generation.
 
+## Interior-point LP/QP
+
+The infeasible-start predictor-corrector method forms the augmented Newton KKT
+system for the quadratic Hessian, equality rows and the inequality diagonal
+scaling. KKT entries are accumulated in sparse ordered rows, canonicalized to
+CSC and factorized by the core sparse partial-pivot LU. Factorization count and
+maximum assembled KKT nonzeros are returned in `QpResult`; the sparse basis solve
+also performs residual refinement. Constraint canonicalization and the current
+positive-semidefinite Hessian check still allocate dense workspaces, so the full
+QP pipeline is not yet a large-scale sparse implementation.
+
 ## Certificates and numerical policy
 
 All terminal mathematical claims are rechecked against the original model by an

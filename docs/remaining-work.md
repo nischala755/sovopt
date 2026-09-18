@@ -19,7 +19,8 @@
 - Optimization Flight Recorder recording, SHA-256 integrity, replay,
   independent re-verification, API download and dashboard timeline.
 - Checksum-pinned Netlib/MIPLIB manifests and an isolated reference adapter.
-- Small convex QP and LP interior-point solves with primal/KKT verification.
+- Small convex QP and LP interior-point solves with primal/KKT verification and
+  sparse CSC KKT assembly plus sparse partial-pivot LU factorization.
 - Mathematical demonstrators for crude blending, process optimization,
   production planning and supply chains.
 
@@ -45,8 +46,8 @@
   cut-pool management, local search and tree restart/persistence. Bounded strong branching
   with real child LP probes and safe
   binary knapsack cover and conflict-clique separators are implemented.
-- Sparse large-scale QP KKT factorization, QP file import, infeasibility and
-  unboundedness certificates, and Flight Recorder QP schemas. Optimal QP KKT
+- Fully sparse QP canonicalization and PSD validation, QP file import,
+  infeasibility and unboundedness certificates, and Flight Recorder QP schemas. Optimal QP KKT
   certificates now use original-model row and variable coordinates.
 - Crude blending, production-planning and supply-chain demonstrations.
 - Mittelmann manifest and measured benchmark run.
