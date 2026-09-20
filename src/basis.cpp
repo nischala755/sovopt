@@ -205,7 +205,7 @@ void UpdatedBasis::refactorize() {
     ++refactorizations_;
 }
 
-std::vector<double> UpdatedBasis::solve(std::span<const double> rhs) const {
+std::vector<double> UpdatedBasis::solve_raw(std::span<const double> rhs) const {
     auto result = base_->solve(rhs);
     for (const auto& eta : etas_) {
         const double pivot = eta.column[eta.position];
@@ -219,7 +219,7 @@ std::vector<double> UpdatedBasis::solve(std::span<const double> rhs) const {
     return result;
 }
 
-std::vector<double> UpdatedBasis::solve_transpose(std::span<const double> rhs) const {
+std::vector<double> UpdatedBasis::solve_transpose_raw(std::span<const double> rhs) const {
     std::vector<double> work(rhs.begin(), rhs.end());
     if (work.size() != columns_.size())
         throw NumericalError("Basis right-hand side has incorrect dimension");
@@ -232,6 +232,46 @@ std::vector<double> UpdatedBasis::solve_transpose(std::span<const double> rhs) c
         work[it->position] = finite(value / it->column[it->position]);
     }
     return base_->solve_transpose(work);
+}
+
+std::vector<double> UpdatedBasis::multiply_current(std::span<const double> x,bool transpose) const {
+    std::vector<double> product(x.size(),0);
+    for(Index j=0;j<columns_.size();++j){
+        const auto column=matrix_->column(columns_[j]);
+        for(Index k=0;k<column.rows.size();++k){
+            if(transpose)product[j]=finite(std::fma(column.values[k],x[column.rows[k]],product[j]));
+            else product[column.rows[k]]=finite(std::fma(column.values[k],x[j],product[column.rows[k]]));
+        }
+    }
+    return product;
+}
+
+std::vector<double> UpdatedBasis::solve(std::span<const double> rhs) const {
+    auto result=solve_raw(rhs);last_solve_info_={};double previous=std::numeric_limits<double>::infinity();
+    for(Index pass=0;pass<=3;++pass){
+        const auto product=multiply_current(result,false);std::vector<double>residual(rhs.size());
+        double absolute=0,scale=0;for(Index i=0;i<rhs.size();++i){residual[i]=finite(rhs[i]-product[i]);absolute=std::max(absolute,std::abs(residual[i]));scale=std::max(scale,std::abs(rhs[i])+std::abs(product[i]));}
+        last_solve_info_.scaled_residual=absolute/std::max(scale,std::numeric_limits<double>::min());
+        if(absolute==0||pass==3||!(absolute<previous))break;
+        previous=absolute;const auto correction=solve_raw(residual);
+        for(Index i=0;i<result.size();++i)result[i]=finite(result[i]+correction[i]);
+        ++last_solve_info_.refinements;
+    }
+    return result;
+}
+
+std::vector<double> UpdatedBasis::solve_transpose(std::span<const double> rhs) const {
+    auto result=solve_transpose_raw(rhs);last_solve_info_={};double previous=std::numeric_limits<double>::infinity();
+    for(Index pass=0;pass<=3;++pass){
+        const auto product=multiply_current(result,true);std::vector<double>residual(rhs.size());
+        double absolute=0,scale=0;for(Index i=0;i<rhs.size();++i){residual[i]=finite(rhs[i]-product[i]);absolute=std::max(absolute,std::abs(residual[i]));scale=std::max(scale,std::abs(rhs[i])+std::abs(product[i]));}
+        last_solve_info_.scaled_residual=absolute/std::max(scale,std::numeric_limits<double>::min());
+        if(absolute==0||pass==3||!(absolute<previous))break;
+        previous=absolute;const auto correction=solve_transpose_raw(residual);
+        for(Index i=0;i<result.size();++i)result[i]=finite(result[i]+correction[i]);
+        ++last_solve_info_.refinements;
+    }
+    return result;
 }
 
 void UpdatedBasis::replace(Index position, Index entering_column) {

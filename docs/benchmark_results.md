@@ -91,8 +91,12 @@ All four native optimality certificates pass original-coordinate verification
 and agree with the published Netlib objectives within the manifest tolerances.
 On additional locally cached Netlib models, ADLITTLE stopped at 100,000 simplex
 iterations without a terminal claim; BLEND parsed after accepting its descriptive
-NAME card, then returned numerical failure after 82 iterations. These failures
-are retained as reliability targets.
+NAME card, then returned numerical failure after 82 iterations. After adding
+residual checks and iterative refinement against the current product-form basis,
+a repeat on 2026-09-20 still stopped at 100,000 iterations for ADLITTLE and
+numerical failure after 81 iterations for BLEND. AFIRO remained verified at
+-464.75314285714285. The basis change is a numerical safeguard, not a solution
+to these two reliability failures.
 
 The root-diving heuristic found a verified incumbent on the small binary
 regression. It did not change the MIPLIB flugpl result: with root cuts disabled,

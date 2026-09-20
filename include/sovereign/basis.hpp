@@ -49,6 +49,7 @@ public:
     [[nodiscard]] const std::vector<Index>& columns() const noexcept { return columns_; }
     [[nodiscard]] Index update_count() const noexcept { return etas_.size(); }
     [[nodiscard]] Index refactorizations() const noexcept { return refactorizations_; }
+    [[nodiscard]] BasisSolveInfo last_solve_info() const noexcept { return last_solve_info_; }
 private:
     struct Eta { Index position; std::vector<double> column; };
     const CscMatrix* matrix_;
@@ -58,7 +59,11 @@ private:
     Index refactorizations_ = 0;
     std::unique_ptr<SparseBasis> base_;
     std::vector<Eta> etas_;
+    mutable BasisSolveInfo last_solve_info_;
     void refactorize();
     [[nodiscard]] std::vector<double> matrix_column(Index column) const;
+    [[nodiscard]] std::vector<double> solve_raw(std::span<const double> rhs) const;
+    [[nodiscard]] std::vector<double> solve_transpose_raw(std::span<const double> rhs) const;
+    [[nodiscard]] std::vector<double> multiply_current(std::span<const double> x,bool transpose) const;
 };
 }

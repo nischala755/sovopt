@@ -104,3 +104,14 @@ TEST_CASE("Updated sparse basis refactorizes at its update limit and rejects wea
     REQUIRE(basis.refactorizations()==2);
     REQUIRE_THROWS_AS(basis.replace(0,3),NumericalError);
 }
+
+TEST_CASE("Updated basis refines residuals against the current ill-conditioned basis", "[basis][updates][numerical]") {
+    const auto a=CscMatrix::from_triplets(3,5,{{0,0,1},{1,1,1},{2,2,1},{0,3,1e-4},{1,3,1},{1,4,1},{2,4,1e4}});
+    UpdatedBasis basis(a,{0,1,2},1e-12,8);basis.replace(0,3);basis.replace(2,4);
+    const std::vector<double> expected{1,2,3};
+    const auto rhs=std::vector<double>{1e-4,6,3e4};const auto forward=basis.solve(rhs);const auto forward_info=basis.last_solve_info();
+    REQUIRE(forward_info.scaled_residual<=1e-12);REQUIRE(forward_info.refinements<=3);
+    const auto transpose_rhs=std::vector<double>{2.0001,2,30002};const auto transpose=basis.solve_transpose(transpose_rhs);const auto transpose_info=basis.last_solve_info();
+    REQUIRE(transpose_info.scaled_residual<=1e-12);REQUIRE(transpose_info.refinements<=3);
+    for(Index i=0;i<3;++i){REQUIRE(std::abs(forward[i]-expected[i])<=1e-7);REQUIRE(std::abs(transpose[i]-expected[i])<=1e-7);}
+}
