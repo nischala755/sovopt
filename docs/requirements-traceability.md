@@ -4,7 +4,7 @@ Evidence date: 2026-09-20. Status reflects executable behavior, not class names.
 
 | Area | Requirement | Status | Evidence or gap |
 |---|---|---|---|
-| Solver core | LP | IMPLEMENTED | Two-phase revised simplex; five verified Netlib instances |
+| Solver core | LP | IMPLEMENTED | Two-phase revised simplex; seven verified Netlib instances |
 | Solver core | MILP | PARTIALLY IMPLEMENTED | Verified small tests; MIPLIB flugpl reaches iteration limit |
 | Solver core | QP | PARTIALLY IMPLEMENTED | QPS `QUADOBJ` import, sparse canonicalization/PSD/KKT paths, optimal KKT, Farkas infeasibility and Hessian-null recession certificates pass tests; ordering and fill control remain limited |
 | Solver core | Sparse computation | IMPLEMENTED | Canonical CSC and sparse-row LU |
@@ -30,7 +30,7 @@ Evidence date: 2026-09-20. Status reflects executable behavior, not class names.
 | Industrial | Power dispatch | IMPLEMENTED | Seeded mathematical model generator |
 | Industrial | Transportation | PARTIALLY IMPLEMENTED | Logistics overlaps; no named validation |
 | Industrial | Supply chain | IMPLEMENTED | Seeded capacitated plant/customer network generator and solve regression |
-| Benchmark | Netlib | PARTIALLY IMPLEMENTED | AFIRO, SC50A, SC50B, SC105 and ADLITTLE match published optima and verify; BLEND remains unsolved |
+| Benchmark | Netlib | PARTIALLY IMPLEMENTED | AFIRO, SC50A, SC50B, SC105, ADLITTLE, ISRAEL and SC205 match published optima and verify; BLEND remains unsolved |
 | Benchmark | MIPLIB | PARTIALLY IMPLEMENTED | flugpl manifest/run exists and currently fails |
 | Benchmark | Mittelmann | NOT IMPLEMENTED | No manifest or measured run |
 | Benchmark | Reference comparison | IMPLEMENTED | Isolated HiGHS 1.15.1 process measured AFIRO, SC50A, SC50B and flugpl; raw evidence is checked in and no production target links the reference |

@@ -147,3 +147,26 @@ The same build's MIPLIB `flugpl` run reached 100,000 LP iterations after 1,920
 nodes in 10.15 solver seconds, with best bound 1193068.6852941173 and no
 verified incumbent. This is an improved tree trajectory, not a successful
 MIPLIB solve.
+
+## Seven-instance Netlib expansion — 2026-09-20
+
+The suite now includes ISRAEL (175 published rows) and SC205 (206 published
+rows). Checksum-pinned raw runs are in
+`benchmarks/results/netlib-2026-09-20-seven.json` and
+`benchmarks/results/reference-highs-2026-09-20-seven.json`. The seven native
+runs all report verified optimality and agree with the
+[Netlib objective table](https://www.netlib.org/lp/data/readme) within their
+manifest tolerances. The additional cases measured:
+
+| Instance | Native objective | Native pivots | Native wall | HiGHS objective | HiGHS pivots |
+|---|---:|---:|---:|---:|---:|
+| ISRAEL | -896644.821863046 | 970 | 3.032 s | -896644.8218630459 | 133 |
+| SC205 | -52.202061211707246 | 227 | 0.107 s | -52.20206121170721 | 84 |
+
+These are independently verified correctness results, not competitive-speed
+claims. Additional probes on the same build exposed remaining reliability
+limits: BANDM reached a 30-second time limit after 1,881 pivots without a
+terminal claim; BEACONFD produced a candidate objective 33592.4858072 after
+378 pivots but failed dual-bound certification; LOTFI produced a candidate
+objective -25.264706061880016 after 1,054 pivots but failed strict dual
+stationarity verification. None is counted as solved.

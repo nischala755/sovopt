@@ -154,6 +154,18 @@ TEST_CASE("Netlib ADLITTLE terminates with a verified optimum", "[lp][regression
     REQUIRE(result.verification.passed);
     REQUIRE(result.objective==Approx(225494.9631623803).margin(1e-5));
 }
+TEST_CASE("Medium Netlib LP certificates verify in original coordinates", "[lp][regression][netlib]") {
+    MpsOptions mps; mps.format=MpsFormat::fixed;
+    for(const auto& [name,expected]:std::vector<std::pair<std::string,double>>{{"israel",-896644.82186},{"sc205",-52.202061212}}) {
+        const auto model=read_mps_file(std::string(SOVEREIGN_SOURCE_DIR)+"/tests/data/"+name+".mps",mps);
+        SolverOptions options;options.iteration_limit=2000;
+        const auto result=solve_lp(model,options);
+        INFO(name);INFO(result.message);
+        REQUIRE(result.status==SolveStatus::optimal);
+        REQUIRE(result.verification.passed);
+        REQUIRE(result.objective==Approx(expected).margin(1e-5));
+    }
+}
 TEST_CASE("LP warm start uses dual simplex to repair a tightened bound","[lp][warmstart]") {
  auto m=make_lp({-3,-2},{{"x",0,4},{"y",0,4}},{{"cap",-infinity,5}},{{0,0,1},{0,1,1}});LpWarmStart warm;
  const auto root=solve_lp(m,{},nullptr,&warm);REQUIRE(root.status==SolveStatus::optimal);REQUIRE_FALSE(warm.basis.empty());

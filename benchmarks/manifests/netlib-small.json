@@ -46,6 +46,24 @@
       "mps_format": "fixed",
       "published_objective": 225494.96316,
       "objective_tolerance": 0.00001
+    },
+    {
+      "name": "ISRAEL",
+      "url": "https://raw.githubusercontent.com/coin-or-tools/Data-Netlib/master/israel.mps.gz",
+      "sha256": "45884751c4a7291263f140ffab09ea7e25ad8f2117fc2f5fa0ca34272f8d5b7a",
+      "compression": "gzip",
+      "mps_format": "fixed",
+      "published_objective": -896644.82186,
+      "objective_tolerance": 0.00001
+    },
+    {
+      "name": "SC205",
+      "url": "https://raw.githubusercontent.com/coin-or-tools/Data-Netlib/master/sc205.mps.gz",
+      "sha256": "a41b5ca6df66e99504d53768bc6bc09301794c53c58f1da13b52eeb205f9e57a",
+      "compression": "gzip",
+      "mps_format": "fixed",
+      "published_objective": -52.202061212,
+      "objective_tolerance": 0.000001
     }
   ]
 }

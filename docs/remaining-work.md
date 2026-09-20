@@ -8,7 +8,7 @@
   basis refinement, product-form inverse updates with controlled sparse-LU
   refactorization, original-model verification, and a checked tableau-row
   extraction interface with transformation-integrality metadata.
-- Verified Netlib AFIRO, SC50A, SC50B, SC105 and ADLITTLE regressions.
+- Verified Netlib AFIRO, SC50A, SC50B, SC105, ADLITTLE, ISRAEL and SC205 regressions.
 - Small-model MILP branch-and-bound, branching, bounds, limits, rounding and a
   safe cut framework. A deterministic, budgeted L1 feasibility pump produces
   independently verified root incumbents when its projection succeeds. Root
