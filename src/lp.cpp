@@ -202,12 +202,13 @@ DualCertificate certificate(const Model& original,const detail::StandardForm& f,
     // Binary64 cannot represent many exact rational duals. Move an already-active
     // row multiplier outward by ULPs until stationarity residuals point toward a
     // finite variable bound. The independent verifier still checks the result.
+    const auto correction_domains=infer_correction_domains(original);
     for (Index pass=0;pass<64*std::max<Index>(1,original.variables.size());++pass) {
         bool changed=false;
         for (Index j=0;j<original.variables.size();++j) {
-            const int direction=residual_direction(j); const auto& variable=original.variables[j];
-            const bool need_up=direction<0 && !std::isfinite(variable.upper);
-            const bool need_down=direction>0 && !std::isfinite(variable.lower);
+            const int direction=residual_direction(j); const auto& domain=correction_domains[j];
+            const bool need_up=direction<0 && !std::isfinite(domain.upper);
+            const bool need_down=direction>0 && !std::isfinite(domain.lower);
             if (!need_up && !need_down) continue;
             const auto col=original.matrix.column(j);
             for (Index k=0;k<col.rows.size();++k) {
@@ -229,10 +230,10 @@ DualCertificate certificate(const Model& original,const detail::StandardForm& f,
     for (Index pass=0;pass<64;++pass) {
         bool changed=false;
         for (Index j=0;j<original.variables.size();++j) {
-            const int direction=residual_direction(j); const auto& variable=original.variables[j];
-            if (direction<0 && !std::isfinite(variable.upper) && c.variable_lower[j]>0) {
+            const int direction=residual_direction(j); const auto& domain=correction_domains[j];
+            if (direction<0 && !std::isfinite(domain.upper) && c.variable_lower[j]>0) {
                 c.variable_lower[j]=std::nextafter(c.variable_lower[j],0); changed=true;
-            } else if (direction>0 && !std::isfinite(variable.lower) && c.variable_upper[j]>0) {
+            } else if (direction>0 && !std::isfinite(domain.lower) && c.variable_upper[j]>0) {
                 c.variable_upper[j]=std::nextafter(c.variable_upper[j],0); changed=true;
             }
         }

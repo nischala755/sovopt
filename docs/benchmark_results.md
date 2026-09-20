@@ -110,6 +110,15 @@ checks the candidate's primal feasibility.
 ADLITTLE was rerun with the same Phase I change and still stopped at the
 100,000-iteration limit without a terminal claim (46.06 solver seconds).
 
+The next certificate investigation found that its ULP repair loop considered
+only explicit variable bounds, while the independent verifier also derives
+conservative implied bounds from model rows. Sharing that domain calculation
+eliminated BLEND's variable-78 stationarity failure. The exact binary64
+stationarity residual at variable 50 remains negative (about 8.4e-17 in the
+examined certificate), and one-ULP moves on nearby active rows shift the
+failure to another variable. The solver still reports `numerical_failure`;
+the verifier was not relaxed and BLEND remains outside the solved set.
+
 The root-diving heuristic found a verified incumbent on the small binary
 regression. It did not change the MIPLIB flugpl result: with root cuts disabled,
 100,000 iterations ended after 363 nodes with no incumbent and best bound

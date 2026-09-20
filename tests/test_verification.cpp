@@ -1,5 +1,6 @@
 #include <catch2/catch_test_macros.hpp>
 #include <sovereign/verification.hpp>
+#include <cmath>
 #include <limits>
 using namespace sovereign;
 TEST_CASE("Singleton implied domains certify rounded duals independently", "[verification]") {
@@ -12,6 +13,15 @@ TEST_CASE("Singleton implied domains certify rounded duals independently", "[ver
     m.constraints={{"small",-infinity,1e-9},{"large",-infinity,2e9}};
     m.matrix=CscMatrix::from_triplets(2,2,{{0,0,1e-9},{1,1,1e9}}); m.objective={1,1}; m.sense=ObjectiveSense::maximize;
     REQUIRE(verify_optimality(m,std::vector<double>{1,2},3,DualCertificate{{0,0},{1.0/1e-9,1.0/1e9},{0,0},{0,0}}).passed);
+}
+TEST_CASE("Certificate construction and verification share conservative implied domains", "[verification]") {
+    Model m; m.variables={{"x",0,infinity}}; m.constraints={{"cap",-infinity,3}};
+    m.matrix=CscMatrix::from_triplets(1,1,{{0,0,2}}); m.objective={1};
+    const auto domains=infer_correction_domains(m);
+    REQUIRE(domains.size()==1);
+    REQUIRE(domains[0].lower==0);
+    REQUIRE(std::isfinite(domains[0].upper));
+    REQUIRE(domains[0].upper>=1.5);
 }
 TEST_CASE("Tiny residuals cannot certify an unbounded dual or invalid ray", "[verification]") {
     Model m; m.matrix=CscMatrix::from_triplets(0,1,{}); m.variables={{"x",0,1}}; m.objective={-100};

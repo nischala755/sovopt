@@ -81,9 +81,8 @@ void bounds(double value,double lo,double hi,double tol,VerificationReport& r) {
     if(std::isfinite(lo)&&lo-value>tol*(1+std::abs(lo))) fail(r,"Lower bound violation");
     if(std::isfinite(hi)&&value-hi>tol*(1+std::abs(hi))) fail(r,"Upper bound violation");
 }
-struct Domain { double lower,upper; };
-std::vector<Domain> correction_domains(const Model& m) {
-    std::vector<Domain> domains;
+std::vector<VariableCorrectionDomain> correction_domains(const Model& m) {
+    std::vector<VariableCorrectionDomain> domains;
     for(const auto& v:m.variables) domains.push_back({v.lower,v.upper});
     std::vector<std::vector<std::pair<Index,double>>> rows(m.constraints.size());
     for(Index j=0;j<m.variables.size();++j) {
@@ -162,6 +161,9 @@ bool dual(const Model& m,const DualCertificate& d,const Tolerances& t,bool farka
     if(farkas&&!(conservative>0)) fail(r,"Farkas bound must be strictly positive");
     return true;
 }
+}
+std::vector<VariableCorrectionDomain> infer_correction_domains(const Model& m) {
+    return correction_domains(m);
 }
 VerificationReport verify_primal(const Model& m,std::span<const double> x,double claimed,const Tolerances& t,bool integer) {
     VerificationReport r;
