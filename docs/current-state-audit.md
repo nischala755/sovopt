@@ -13,7 +13,7 @@ code exists but this host cannot validate it.
 | C++ solver | C++20 core library and CLI executable | `CMakeLists.txt`, `src/` | Implemented | Industrial scale is not established |
 | Sparse matrix | Canonical immutable CSC, products and transpose products | `include/sovereign/sparse_matrix.hpp`, `src/sparse_matrix.cpp` | Implemented | No parallel SpMV in authoritative solver |
 | Model representation | Two-sided rows, bounds, linear/quadratic objectives and integer domains | `include/sovereign/model.hpp`, `include/sovereign/qp.hpp` | Implemented | MIQP is not implemented |
-| MPS/QPS parser | Strict free/fixed reader with resource limits and triangular `QUADOBJ` support | `src/mps.cpp` | Implemented | Other vendor quadratic sections are unsupported |
+| MPS/QPS parser | Strict free/fixed reader with resource limits, descriptive Netlib NAME titles and triangular `QUADOBJ` support | `src/mps.cpp` | Implemented | Other vendor quadratic sections are unsupported |
 | LP | Two-phase revised simplex, Harris ratio selection, refinement, product-form sparse basis updates and original-space verification | `src/lp.cpp`, `src/lp_standard.cpp`, `src/basis.cpp` | Partial | Standalone dual-simplex selection and stronger factor update schemes are absent |
 | MILP | Deterministic best-bound branch-and-bound over verified LP relaxations | `src/mip.cpp` | Partial | Single-threaded; limited cuts and primal heuristic |
 | QP | Convex quadratic model, QPS `QUADOBJ` import and infeasible-start primal-dual predictor-corrector method | `include/sovereign/qp.hpp`, `src/qp.cpp` | Implemented for small convex QPs | Canonicalization and PSD/KKT paths are sparse, but elimination ordering and fill control remain limited |
@@ -26,7 +26,7 @@ code exists but this host cannot validate it.
 | Branching | Most-fractional, learned pseudo-cost and bounded strong branching with real LP probes | `src/mip.cpp` | Implemented | Reliability on difficult MIPLIB remains incomplete |
 | Node selection | Deterministic best-bound queue with ID tie-break | `src/mip.cpp` | Implemented | No selectable depth/hybrid policy |
 | Cuts | Integer-row strengthening, row CG, conservative tableau GMI, binary cover and conflict-clique separation | `src/cuts.cpp`, `src/mip.cpp` | Partial | Multi-round cut pools, aging and broader MIR aggregation are absent |
-| Heuristics | Rounding, fixed-integer LP repair and deterministic budgeted L1 feasibility pump | `src/mip.cpp` | Partial | No diving or local search |
+| Heuristics | Rounding, fixed-integer LP repair, deterministic budgeted L1 feasibility pump and root diving | `src/mip.cpp` | Partial | No neighborhood local search; flugpl has no incumbent |
 | MIP gap | Normalized bound/incumbent gap and termination | `src/mip.cpp` | Implemented | Depends on single-threaded tree processing |
 | Parallelism | CPU capability reports hardware concurrency | `src/backend.cpp` | Missing | Authoritative LP/MILP algorithms are single-threaded |
 | CPU backend | CSC products and experimental primal-dual workload | `src/backend.cpp` | Implemented | First-order result is deliberately non-authoritative |
@@ -40,7 +40,7 @@ code exists but this host cannot validate it.
 | REST API | FastAPI asynchronous solves, telemetry, verification, benchmarks and recorder operations | `service/app.py`, `service/store.py` | Implemented | Distributed durable job storage is absent |
 | Dashboard | React engineering console with telemetry, verification and Flight Recorder views | `web/src/` | Implemented | Production authentication is deployment-specific |
 | Mistral integration | Server-side optional explanations and confirmation-gated formulations | `service/ai.py`, `service/app.py` | Implemented | Live call is currently rate/quota limited; AI remains optional |
-| Netlib | Automated AFIRO, SC50A and SC50B manifest and verified regressions | `benchmarks/manifests/netlib-small.json`, `tests/test_lp.cpp` | Implemented | Broader coverage remains useful |
+| Netlib | Automated AFIRO, SC50A, SC50B and SC105 manifest with verified results | `benchmarks/manifests/netlib-small.json`, `benchmarks/results/netlib-2026-09-20.json` | Partial | ADLITTLE stalls and BLEND fails numerically |
 | MIPLIB | Checksum-pinned flugpl manifest and measured failed run | `benchmarks/manifests/miplib-small.json` | Partial | Solver reaches iteration limit |
 | Reference solver harness | Isolated exact-command adapter | `benchmarks/baselines/run_reference.py` | Partial | No reference executable installed on this host |
 | Result serialization | CLI JSON plus first-order benchmark JSON/CSV | `src/cli.cpp`, `src/benchmark.cpp` | Partial | No versioned complete solve artifact |

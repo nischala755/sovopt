@@ -72,3 +72,31 @@ one GMI cut, `flugpl` still reached 100,000 iterations without an incumbent afte
 5 nodes and 4.82 solver seconds, with bound 1169774.1730715898. The baseline with
 no applicable tableau cut remains faster on this instance, so GMI is a verified
 capability rather than a demonstrated `flugpl` performance improvement.
+
+## Expanded Netlib and reference run — 2026-09-20
+
+The checksum-pinned suite now includes SC105. Raw native and isolated HiGHS
+records are in `benchmarks/results/netlib-2026-09-20.json` and
+`benchmarks/results/reference-highs-2026-09-20.json`. Wall times include the
+respective harness calls and are not matched-process timing comparisons.
+
+| Instance | Native objective | Native pivots | Native wall | HiGHS objective | HiGHS pivots | HiGHS wall |
+|---|---:|---:|---:|---:|---:|---:|
+| AFIRO | -464.7531428571428 | 52 | 0.051 s | -464.75314285714285 | 6 | 0.004 s |
+| SC50A | -64.5750770585645 | 55 | 0.086 s | -64.5750770585645 | 18 | 0.002 s |
+| SC50B | -70 | 52 | 0.034 s | -70 | 18 | 0.002 s |
+| SC105 | -52.202061211707246 | 136 | 0.273 s | -52.20206121170723 | 37 | 0.004 s |
+
+All four native optimality certificates pass original-coordinate verification
+and agree with the published Netlib objectives within the manifest tolerances.
+On additional locally cached Netlib models, ADLITTLE stopped at 100,000 simplex
+iterations without a terminal claim; BLEND parsed after accepting its descriptive
+NAME card, then returned numerical failure after 82 iterations. These failures
+are retained as reliability targets.
+
+The root-diving heuristic found a verified incumbent on the small binary
+regression. It did not change the MIPLIB flugpl result: with root cuts disabled,
+100,000 iterations ended after 363 nodes with no incumbent and best bound
+1181497.4999999998. Raising the budget to 1,000,000 iterations also stopped at
+node 363, after one node consumed the extra budget. This is not evidence of
+difficult-MIPLIB reliability.

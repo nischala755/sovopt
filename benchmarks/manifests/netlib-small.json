@@ -28,6 +28,15 @@
       "mps_format": "fixed",
       "published_objective": -70.0,
       "objective_tolerance": 0.000001
+    },
+    {
+      "name": "SC105",
+      "url": "https://raw.githubusercontent.com/coin-or-tools/Data-Netlib/master/sc105.mps.gz",
+      "sha256": "b2320addf4775365c33e110567df671b25f7a452e68ecc008d83e5dd759bc8d0",
+      "compression": "gzip",
+      "mps_format": "fixed",
+      "published_objective": -52.202061212,
+      "objective_tolerance": 0.000001
     }
   ]
 }

@@ -142,7 +142,7 @@ TEST_CASE("Tableau GMI cuts remove a fractional integer basic point and preserve
 
 TEST_CASE("Feasibility pump finds and independently verifies an incumbent missed by one-shot rounding","[mip][heuristic]") {
  auto m=example({1,1},{{"x",0,1,VariableType::binary},{"y",0,1,VariableType::binary}},{{"capacity",-infinity,1.5}},{{0,0,1},{0,1,1}});
- SolverOptions o;o.cuts=false;o.node_limit=1;o.rounding=true;o.feasibility_pump=true;o.feasibility_pump_passes=4;
+ SolverOptions o;o.cuts=false;o.node_limit=1;o.rounding=false;o.feasibility_pump=true;o.feasibility_pump_passes=4;
  std::vector<std::string> events;o.telemetry=[&](const auto&e){events.push_back(e.type);};
  const auto r=run(m,o);
  REQUIRE(r.status==SolveStatus::optimal);
@@ -151,4 +151,11 @@ TEST_CASE("Feasibility pump finds and independently verifies an incumbent missed
  REQUIRE(r.verification.passed);
  REQUIRE(std::find(events.begin(),events.end(),"FEASIBILITY_PUMP_STARTED")!=events.end());
  REQUIRE(std::find(events.begin(),events.end(),"FEASIBILITY_PUMP_INCUMBENT")!=events.end());
+}
+TEST_CASE("Root diving fixes integer variables sequentially and verifies its incumbent","[mip][heuristic][diving]") {
+ auto m=example({1,1},{{"x",0,1,VariableType::binary},{"y",0,1,VariableType::binary}},{{"capacity",-infinity,1.5}},{{0,0,1},{0,1,1}});
+ SolverOptions o;o.cuts=false;o.node_limit=1;o.rounding=true;o.feasibility_pump=false;
+ std::vector<std::string>events;o.telemetry=[&](const auto&e){events.push_back(e.type);};
+ const auto r=run(m,o);REQUIRE(r.status==SolveStatus::optimal);REQUIRE(r.objective==Catch::Approx(1));REQUIRE(r.verification.passed);
+ REQUIRE(std::find(events.begin(),events.end(),"DIVING_INCUMBENT")!=events.end());
 }

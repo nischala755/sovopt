@@ -4,7 +4,7 @@
 > A from-scratch optimization laboratory built for transparent, sovereign computation.
 
 [![C++20](https://img.shields.io/badge/C%2B%2B-20-00599C)](https://isocpp.org/)
-[![Tests](https://img.shields.io/badge/native%20tests-129%20passing-2ea44f)](#verification)
+[![Tests](https://img.shields.io/badge/native%20tests-131%20passing-2ea44f)](#verification)
 [![Python](https://img.shields.io/badge/Python%20tests-13%20passing-2ea44f)](#verification)
 [![Solver](https://img.shields.io/badge/external%20solver-none-ffb84d)](#trust-boundary)
 [![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https%3A%2F%2Fgithub.com%2Fnischala755%2Fsovopt)
@@ -43,7 +43,7 @@ flowchart LR
 | Convex QP and interior point | Infeasible-start predictor-corrector method with independent primal/KKT residual checks | Implemented for small convex models |
 | CLI and application API | Native CLI, pybind11 and asynchronous FastAPI jobs | Implemented |
 | Engineering dashboard | Model inspection, telemetry, verification and experiment views | Implemented |
-| Recognised benchmarks | Netlib AFIRO, SC50A and SC50B match published optima and pass independent verification | Demonstrated |
+| Recognised benchmarks | Netlib AFIRO, SC50A, SC50B and SC105 match published optima and pass independent verification | Demonstrated |
 | Broad Netlib/MIPLIB coverage | MIPLIB flugpl currently reaches the iteration limit | In progress |
 | Established-solver performance comparison | Isolated HiGHS 1.15.1 comparison for three Netlib LPs and MIPLIB flugpl | Demonstrated |
 | Optimization Flight Recorder | Real solve timeline, certificate, SHA-256 integrity, replay and independent re-verification | Implemented |

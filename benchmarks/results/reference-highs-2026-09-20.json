@@ -1,0 +1,71 @@
+{
+  "schema_version": 1,
+  "platform": "Windows-11-10.0.26200-SP0",
+  "trust_boundary": "Optional reference process; never imported or linked by AstraNiti production targets",
+  "records": [
+    {
+      "label": "REFERENCE",
+      "solver": "HiGHS",
+      "version": "1.15.1",
+      "available": true,
+      "executed": true,
+      "model": "build\\netlib\\afiro.mps",
+      "read_status": "HighsStatus.kOk",
+      "run_status": "HighsStatus.kOk",
+      "model_status": "Optimal",
+      "objective": -464.75314285714285,
+      "wall_seconds": 0.003708300006110221,
+      "simplex_iterations": 6,
+      "mip_nodes": -1,
+      "mip_gap": null
+    },
+    {
+      "label": "REFERENCE",
+      "solver": "HiGHS",
+      "version": "1.15.1",
+      "available": true,
+      "executed": true,
+      "model": "build\\netlib\\sc50a.mps",
+      "read_status": "HighsStatus.kOk",
+      "run_status": "HighsStatus.kOk",
+      "model_status": "Optimal",
+      "objective": -64.5750770585645,
+      "wall_seconds": 0.002361499995458871,
+      "simplex_iterations": 18,
+      "mip_nodes": -1,
+      "mip_gap": null
+    },
+    {
+      "label": "REFERENCE",
+      "solver": "HiGHS",
+      "version": "1.15.1",
+      "available": true,
+      "executed": true,
+      "model": "build\\netlib\\sc50b.mps",
+      "read_status": "HighsStatus.kOk",
+      "run_status": "HighsStatus.kOk",
+      "model_status": "Optimal",
+      "objective": -69.99999999999999,
+      "wall_seconds": 0.001947999990079552,
+      "simplex_iterations": 18,
+      "mip_nodes": -1,
+      "mip_gap": null
+    },
+    {
+      "label": "REFERENCE",
+      "solver": "HiGHS",
+      "version": "1.15.1",
+      "available": true,
+      "executed": true,
+      "model": "build\\netlib\\sc105.mps",
+      "read_status": "HighsStatus.kOk",
+      "run_status": "HighsStatus.kOk",
+      "model_status": "Optimal",
+      "objective": -52.20206121170723,
+      "wall_seconds": 0.0037800000282004476,
+      "simplex_iterations": 37,
+      "mip_nodes": -1,
+      "mip_gap": null
+    }
+  ]
+}

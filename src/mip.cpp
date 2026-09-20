@@ -102,8 +102,8 @@ SolveResult solve_mip(const Model& original,const SolverOptions& options) {
         if(r.iterations>=options.iteration_limit) return SolveStatus::iteration_limit;
         return SolveStatus::optimal;
     };
-    auto lp=[&](const Model& m,const LpWarmStart* input=nullptr,LpWarmStart* output=nullptr) {
-        SolverOptions o=options; o.iteration_limit=options.iteration_limit-r.iterations;
+    auto lp=[&](const Model& m,const LpWarmStart* input=nullptr,LpWarmStart* output=nullptr,Index cap=std::numeric_limits<Index>::max()) {
+        SolverOptions o=options; o.iteration_limit=std::min(options.iteration_limit-r.iterations,cap);
         o.time_limit_seconds=std::max(0.0,options.time_limit_seconds-elapsed()); o.telemetry={};o.presolve=false;
         auto result=solve_lp(m,o,input,output); r.iterations+=result.iterations; return result;
     };
@@ -147,6 +147,33 @@ SolveResult solve_mip(const Model& original,const SolverOptions& options) {
         }
         emit("FEASIBILITY_PUMP_STOPPED","no verified candidate");
         return false;
+    };
+    auto diving=[&](const Model& node_model,const std::vector<double>& relaxation) {
+        std::vector<Index> discrete;for(Index j=0;j<original.variables.size();++j)if(original.variables[j].type!=VariableType::continuous)discrete.push_back(j);
+        if(discrete.empty()||discrete.size()>32)return false;
+        emit("DIVING_STARTED","integer_variables="+std::to_string(discrete.size()));
+        Model restricted=node_model;auto point=relaxation;std::vector<bool>fixed(original.variables.size(),false);
+        for(Index pass=0;pass<discrete.size()&&limit()==SolveStatus::optimal;++pass){
+            Index chosen=original.variables.size();double nearest=infinity;
+            for(Index j:discrete)if(!fixed[j]){const double distance=std::abs(point[j]-std::round(point[j]));if(distance<nearest){nearest=distance;chosen=j;}}
+            if(chosen==original.variables.size())break;
+            const auto bounds=restricted.variables[chosen];const double preferred=std::clamp(std::round(point[chosen]),std::ceil(bounds.lower),std::floor(bounds.upper));
+            const double alternative=preferred<=point[chosen]?std::ceil(point[chosen]):std::floor(point[chosen]);
+            bool succeeded=false;
+            for(Index attempt=0;attempt<2;++attempt){
+                const double value=attempt==0?preferred:alternative;
+                if(attempt==1&&value==preferred)continue;
+                if(value<bounds.lower||value>bounds.upper||!std::isfinite(value))continue;
+                restricted.variables[chosen].lower=value;restricted.variables[chosen].upper=value;
+                const auto solved=lp(restricted,nullptr,nullptr,2000);emit("DIVING_PROBE","variable="+std::to_string(chosen)+" pass="+std::to_string(pass+1));
+                if(solved.status==SolveStatus::optimal&&solved.verification.passed){point=solved.primal;succeeded=true;break;}
+                if(solved.status!=SolveStatus::infeasible)break;
+            }
+            if(!succeeded){emit("DIVING_STOPPED","fixing failed");return false;}
+            fixed[chosen]=true;
+        }
+        if(accept(point)){emit("DIVING_INCUMBENT");return true;}
+        emit("DIVING_STOPPED","candidate failed original-model verification");return false;
     };
     Model root=original;
     for(auto& v:root.variables) if(v.type==VariableType::binary) { v.lower=std::max(0.0,v.lower); v.upper=std::min(1.0,v.upper); }
@@ -224,6 +251,7 @@ SolveResult solve_mip(const Model& original,const SolverOptions& options) {
             }
             auto repaired=lp(fixed); if(repaired.status==SolveStatus::optimal) accept(repaired.primal);
         }
+        if(options.rounding&&node.id==0&&!have_incumbent&&limit()==SolveStatus::optimal)(void)diving(node.model,relaxation.primal);
         if(options.feasibility_pump&&node.id==0&&!have_incumbent&&limit()==SolveStatus::optimal)
             (void)feasibility_pump(node.model,relaxation.primal);
         update_bound();

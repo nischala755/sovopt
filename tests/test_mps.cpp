@@ -28,6 +28,10 @@ TEST_CASE("MPS reads objective sense matrix defaults and objective offset", "[mp
     REQUIRE(m.constraints[2].lower == 2); REQUIRE(m.constraints[2].upper == 2);
     REQUIRE(m.variables[0].lower == 0); REQUIRE(m.variables[0].upper == infinity);
 }
+TEST_CASE("MPS NAME card accepts a trailing descriptive title", "[mps][netlib]") {
+    const auto m=parse("NAME          BLEND    BRUCE MURTAGHS BLENDING PROBLEM (MINIMIZE).\nROWS\n N OBJ\n L R\nCOLUMNS\n x OBJ 1 R 1\nRHS\n b R 2\nENDATA\n");
+    REQUIRE(m.name=="BLEND");REQUIRE(m.variables.size()==1);
+}
 TEST_CASE("MPS ranges implement all row sign combinations", "[mps]") {
     for (const auto& type : {"L","G","E"}) for (const auto range : {"3","-3"}) {
         const auto m = parse(std::string("NAME T\nROWS\n N OBJ\n ")+type+" R\nCOLUMNS\n x R 1\nRHS\n b R 5\nRANGES\n q R "+range+"\nENDATA\n");

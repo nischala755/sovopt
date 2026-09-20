@@ -81,8 +81,10 @@ void Reader::header(const std::vector<std::string>& t) {
     if ((section_ == Section::sense && !sense_read_) || (section_ == Section::objective && !objective_read_)) fail("missing objective metadata value");
     const auto& key = t[0];
     if (key == "NAME") {
-        if (section_ != Section::none || t.size() > 2) fail("invalid or duplicate NAME");
-        if (t.size() == 2) model_.name = t[1];
+        if (section_ != Section::none) fail("invalid or duplicate NAME");
+        // Common Netlib cards append a human-readable title after the model
+        // identifier. The identifier is the first token; the suffix is metadata.
+        if (t.size() >= 2) model_.name = t[1];
         section_ = Section::name; return;
     }
     if (section_ == Section::none) fail("expected NAME first");
