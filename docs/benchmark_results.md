@@ -125,3 +125,25 @@ regression. It did not change the MIPLIB flugpl result: with root cuts disabled,
 1181497.4999999998. Raising the budget to 1,000,000 iterations also stopped at
 node 363, after one node consumed the extra budget. This is not evidence of
 difficult-MIPLIB reliability.
+
+## ADLITTLE pricing regression and expanded Netlib run — 2026-09-20
+
+ADLITTLE's earlier 100,000-iteration run cycled between basis columns 8 and
+33 after iteration 383. When a basis repeats, simplex pricing now compares
+reduced costs with the scale of the entire objective; normal pricing remains
+unchanged. A checksum-pinned offline regression and the expanded Netlib manifest
+now solve ADLITTLE in 435 pivots. The original-coordinate certificate passes,
+and the objective 225494.9631623803 agrees with the
+[Netlib published value](https://www.netlib.org/lp/data/readme) 2.2549496316E+05
+and an isolated HiGHS 1.15.1 run at 225494.9631623803 (87 pivots).
+
+Raw five-instance runs are in `benchmarks/results/netlib-2026-09-20-expanded.json`
+and `benchmarks/results/reference-highs-2026-09-20-expanded.json`. All five
+native runs report `optimal` with `verified=true`. Native wall times include
+CLI process startup and are not matched-process speed comparisons. BLEND still
+returns `numerical_failure` because its dual certificate does not pass.
+
+The same build's MIPLIB `flugpl` run reached 100,000 LP iterations after 1,920
+nodes in 10.15 solver seconds, with best bound 1193068.6852941173 and no
+verified incumbent. This is an improved tree trajectory, not a successful
+MIPLIB solve.

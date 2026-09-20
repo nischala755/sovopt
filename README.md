@@ -43,9 +43,9 @@ flowchart LR
 | Convex QP and interior point | Infeasible-start predictor-corrector method with independent primal/KKT residual checks | Implemented for small convex models |
 | CLI and application API | Native CLI, pybind11 and asynchronous FastAPI jobs | Implemented |
 | Engineering dashboard | Model inspection, telemetry, verification and experiment views | Implemented |
-| Recognised benchmarks | Netlib AFIRO, SC50A, SC50B and SC105 match published optima and pass independent verification | Demonstrated |
+| Recognised benchmarks | Netlib AFIRO, SC50A, SC50B, SC105 and ADLITTLE match published optima and pass independent verification | Demonstrated |
 | Broad Netlib/MIPLIB coverage | MIPLIB flugpl currently reaches the iteration limit | In progress |
-| Established-solver performance comparison | Isolated HiGHS 1.15.1 comparison for three Netlib LPs and MIPLIB flugpl | Demonstrated |
+| Established-solver performance comparison | Isolated HiGHS 1.15.1 comparison for five Netlib LPs and MIPLIB flugpl; speed competitiveness is not established | Demonstrated |
 | Optimization Flight Recorder | Real solve timeline, certificate, SHA-256 integrity, replay and independent re-verification | Implemented |
 | Challenging large-scale robustness | Current sparse refactorization architecture is not yet an industrial-scale performance result | In progress |
 | GPU acceleration | Real optional CUDA kernels exist; no CUDA hardware/toolkit was available for measurement | Unverified |

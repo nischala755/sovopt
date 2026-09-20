@@ -37,6 +37,15 @@
       "mps_format": "fixed",
       "published_objective": -52.202061212,
       "objective_tolerance": 0.000001
+    },
+    {
+      "name": "ADLITTLE",
+      "url": "https://raw.githubusercontent.com/coin-or-tools/Data-Netlib/master/adlittle.mps.gz",
+      "sha256": "9c9e7581b9157b13ba6985783f4ece702b478b53b813205d14c807aa6e5233c3",
+      "compression": "gzip",
+      "mps_format": "fixed",
+      "published_objective": 225494.96316,
+      "objective_tolerance": 0.00001
     }
   ]
 }

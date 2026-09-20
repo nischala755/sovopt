@@ -8,7 +8,7 @@
   basis refinement, product-form inverse updates with controlled sparse-LU
   refactorization, original-model verification, and a checked tableau-row
   extraction interface with transformation-integrality metadata.
-- Verified Netlib AFIRO, SC50A, SC50B and SC105 regressions.
+- Verified Netlib AFIRO, SC50A, SC50B, SC105 and ADLITTLE regressions.
 - Small-model MILP branch-and-bound, branching, bounds, limits, rounding and a
   safe cut framework. A deterministic, budgeted L1 feasibility pump produces
   independently verified root incumbents when its projection succeeds. Root
@@ -59,9 +59,9 @@
 
 ## D. Needs validation
 
-- ADLITTLE and BLEND Netlib reliability, successful MIPLIB instances, and a
-  broader Netlib set. SC105 is now verified; ADLITTLE reaches the simplex
-  iteration limit and BLEND reaches numerical failure after parsing.
+- BLEND Netlib reliability, successful MIPLIB instances, and a broader Netlib
+  set. ADLITTLE now verifies after repeated-basis pricing correction; BLEND
+  still reaches numerical failure in original-coordinate dual verification.
 - Large degenerate, ill-conditioned and weak-relaxation cases on pinned hardware.
 - Broader reference-solver comparisons beyond the measured isolated HiGHS 1.15.1 run.
 - Malicious-integrity protection would require signatures; SHA-256 detects changes

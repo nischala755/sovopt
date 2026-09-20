@@ -51,6 +51,8 @@ std::string basis_signature(std::span<const Index> columns) {
 }
 SimplexState simplex(detail::StandardForm& f,std::span<const double> cost,bool phase_one,Run& run) {
     const auto& tol=run.options.tolerances;
+    double global_cost_scale=phase_one?1.0:0.0;
+    for(const double coefficient:cost)global_cost_scale=std::max(global_cost_scale,std::abs(coefficient));
     std::deque<std::string> basis_history;
     std::set<std::string> known_bases;
     bool anti_cycling=false;
@@ -61,7 +63,7 @@ SimplexState simplex(detail::StandardForm& f,std::span<const double> cost,bool p
         const auto signature=basis_signature(f.basis);
         if (!known_bases.insert(signature).second && !anti_cycling) {
             anti_cycling=true;
-            run.emit("ANTI_CYCLING_ACTIVATED","repeated basis; strict Bland tie-breaking active");
+            run.emit("ANTI_CYCLING_ACTIVATED","repeated basis; objective-scaled pricing tolerance active");
         }
         basis_history.push_back(signature);
         if (basis_history.size()>256) { known_bases.erase(basis_history.front()); basis_history.pop_front(); }
@@ -83,8 +85,8 @@ SimplexState simplex(detail::StandardForm& f,std::span<const double> cost,bool p
             const double product=dot_column(f.matrix,j,dual); const double reduced=cost[j]-product;
             if (!std::isfinite(reduced)) throw NumericalError("nonfinite reduced cost");
             // Scale to the objective terms, not to an arbitrary unit objective.
-            const double objective_scale=phase_one ? std::max(1.0,std::abs(cost[j])+std::abs(product))
-                                                   : std::max(std::abs(cost[j])+std::abs(product),std::numeric_limits<double>::min());
+            const double objective_scale=std::max((phase_one||anti_cycling)?global_cost_scale:0.0,
+                std::max(std::abs(cost[j])+std::abs(product),std::numeric_limits<double>::min()));
             if (reduced < -tol.dual*objective_scale) { entering=j; break; }
         }
         if (entering==f.matrix.columns()) {
