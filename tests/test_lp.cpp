@@ -132,6 +132,17 @@ TEST_CASE("Netlib SC50 certificates verify in original coordinates", "[lp][regre
         REQUIRE(result.iterations<1000);
     }
 }
+TEST_CASE("Netlib BLEND Phase I does not report a spurious unbounded direction", "[lp][regression][netlib]") {
+    MpsOptions mps; mps.format=MpsFormat::fixed;
+    const auto model=read_mps_file(std::string(SOVEREIGN_SOURCE_DIR)+"/tests/data/blend.mps",mps);
+    const auto result=solve_lp(model);
+    INFO(result.message);
+    REQUIRE(result.iterations>81);
+    REQUIRE(result.status!=SolveStatus::unbounded);
+    REQUIRE_FALSE(result.primal.empty());
+    REQUIRE(verify_primal(model,result.primal,result.objective).passed);
+    REQUIRE(result.objective==Approx(-30.8121498458).margin(1e-7));
+}
 TEST_CASE("LP warm start uses dual simplex to repair a tightened bound","[lp][warmstart]") {
  auto m=make_lp({-3,-2},{{"x",0,4},{"y",0,4}},{{"cap",-infinity,5}},{{0,0,1},{0,1,1}});LpWarmStart warm;
  const auto root=solve_lp(m,{},nullptr,&warm);REQUIRE(root.status==SolveStatus::optimal);REQUIRE_FALSE(warm.basis.empty());

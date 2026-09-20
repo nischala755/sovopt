@@ -83,7 +83,9 @@ SimplexState simplex(detail::StandardForm& f,std::span<const double> cost,bool p
             const double product=dot_column(f.matrix,j,dual); const double reduced=cost[j]-product;
             if (!std::isfinite(reduced)) throw NumericalError("nonfinite reduced cost");
             // Scale to the objective terms, not to an arbitrary unit objective.
-            if (reduced < -tol.dual*std::max(std::abs(cost[j])+std::abs(product),std::numeric_limits<double>::min())) { entering=j; break; }
+            const double objective_scale=phase_one ? std::max(1.0,std::abs(cost[j])+std::abs(product))
+                                                   : std::max(std::abs(cost[j])+std::abs(product),std::numeric_limits<double>::min());
+            if (reduced < -tol.dual*objective_scale) { entering=j; break; }
         }
         if (entering==f.matrix.columns()) {
             double objective=0; for (Index j=0;j<cost.size();++j) objective=std::fma(cost[j],primal[j],objective);

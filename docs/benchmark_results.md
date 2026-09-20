@@ -98,6 +98,18 @@ numerical failure after 81 iterations for BLEND. AFIRO remained verified at
 -464.75314285714285. The basis change is a numerical safeguard, not a solution
 to these two reliability failures.
 
+A subsequent BLEND Phase I pricing correction uses the unit scale of its
+artificial-variable objective when deciding whether a reduced cost is negative.
+The prior run exited Phase I as numerically unbounded after 81 pivots. The new
+run reaches a primal-feasible candidate at -30.812149845828237 after 317
+pivots, but strict original-coordinate dual verification rejects stationarity
+residuals at variables 50 and 78. Its terminal status remains
+`numerical_failure`; it is **not** counted as a solved Netlib instance. The
+checked-in BLEND regression guards the Phase I behavior and independently
+checks the candidate's primal feasibility.
+ADLITTLE was rerun with the same Phase I change and still stopped at the
+100,000-iteration limit without a terminal claim (46.06 solver seconds).
+
 The root-diving heuristic found a verified incumbent on the small binary
 regression. It did not change the MIPLIB flugpl result: with root cuts disabled,
 100,000 iterations ended after 363 nodes with no incumbent and best bound
