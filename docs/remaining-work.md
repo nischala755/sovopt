@@ -28,8 +28,9 @@
 
 - MILP robustness: small regressions pass, while MIPLIB flugpl exhausts its LP
   iteration budget before finding a verified incumbent.
-- Presolve: fixed, constant and singleton transformations exist; duplicate rows,
-  safe aggregation and general coefficient strengthening remain absent.
+- Presolve: fixed, constant, singleton and exact-duplicate-row transformations
+  exist; safe aggregation of differently bounded parallel rows and general
+  coefficient strengthening remain absent.
 - Scaling uses one-pass row/column normalization rather than iterative
   equilibration with condition estimates.
 - Cuts and heuristics are intentionally basic.
@@ -68,5 +69,6 @@
 - CUDA toolkit, driver and device measurements: this host exposes Intel UHD only.
   `scripts/cuda-validate.ps1` is ready to build, cross-check, benchmark and export
   evidence on the target NVIDIA laptop.
-- Reference comparison: no supported reference executable is installed.
+- Reference comparison beyond the checked-in isolated HiGHS 1.15.1 run requires
+  additional reference executables and benchmark runs.
 - Mistral live explanation: the configured account returned HTTP 429.

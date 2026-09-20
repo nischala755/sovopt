@@ -4,7 +4,9 @@
 #include <algorithm>
 #include <cmath>
 #include <limits>
+#include <map>
 #include <stdexcept>
+#include <tuple>
 
 namespace sovereign {
 namespace {
@@ -114,6 +116,17 @@ PresolveResult presolve(const Model& model, const Tolerances& tolerances, bool t
         }
     }
     if(result.infeasible) return result;
+    // Exact duplicate rows can be removed without changing the feasible set or
+    // requiring dual multiplier redistribution during postsolve. Differently
+    // bounded or merely near-equal rows deliberately remain active.
+    using RowKey=std::tuple<std::vector<std::pair<Index,double>>,double,double>;
+    std::vector<std::vector<std::pair<Index,double>>> row_entries(rows.size());
+    for(Index j=0;j<variables.size();++j)if(active_col[j]){const auto column=model.matrix.column(j);for(Index k=0;k<column.rows.size();++k)if(active_row[column.rows[k]])row_entries[column.rows[k]].push_back({j,column.values[k]});}
+    std::map<RowKey,Index> unique_rows;
+    for(Index i=0;i<rows.size();++i)if(active_row[i]){
+        RowKey key{row_entries[i],rows[i].lower,rows[i].upper};const auto [found,inserted]=unique_rows.emplace(std::move(key),i);
+        if(!inserted){active_row[i]=false;result.journal.push_back("Remove exact duplicate row: "+rows[i].name+" (same as "+rows[found->second].name+")");}
+    }
     result.reduced.variables.clear(); result.reduced.constraints.clear(); result.reduced.objective.clear();
     std::vector<Index> row_map(rows.size());
     for(Index i=0;i<rows.size();++i) if(active_row[i]) {

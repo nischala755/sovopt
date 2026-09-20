@@ -18,7 +18,7 @@ Evidence date: 2026-09-14. Status reflects executable behavior, not class names.
 | Algorithms | Branch-and-bound | IMPLEMENTED | Deterministic best-bound queue and verified pruning |
 | Algorithms | Branch-and-cut | PARTIALLY IMPLEMENTED | Integer-row strengthening, row CG, one conservative root GMI tableau round, binary cover and conflict-clique cuts |
 | Algorithms | Cuts | PARTIALLY IMPLEMENTED | Valid row CG, GMI, cover and clique separation exists; multi-round cut pools, aging and broader aggregation remain absent |
-| Algorithms | Presolve | PARTIALLY IMPLEMENTED | Fixed, constant and singleton reductions with reconstruction |
+| Algorithms | Presolve | PARTIALLY IMPLEMENTED | Fixed, constant, singleton and exact-duplicate-row reductions with reconstruction |
 | Algorithms | Heuristics | PARTIALLY IMPLEMENTED | Rounding, fixed-integer LP repair and a deterministic budgeted L1 feasibility pump |
 | Algorithms | Node selection | IMPLEMENTED | Deterministic best-bound queue with most-fractional, learned pseudocost, and bounded strong-branch variable selection |
 | Algorithms | Dual simplex | PARTIALLY IMPLEMENTED | Compatible MILP child bases use dual-simplex repair and product-form basis updates with safe cold fallback; standalone selection remains |

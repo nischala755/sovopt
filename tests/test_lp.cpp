@@ -57,6 +57,14 @@ TEST_CASE("LP reports unbounded only with a verified feasible point and recessio
 TEST_CASE("LP removes redundant phase I artificial basics safely", "[lp]") {
     optimal(make_lp({1,2},{{"x"},{"y"}},{{"a",1,1},{"b",2,2},{"zero",0,0}},{{0,0,1},{0,1,1},{1,0,2},{1,1,2}}),1);
 }
+TEST_CASE("LP exact duplicate-row presolve preserves original-coordinate certificate", "[lp][presolve][duplicates]") {
+    const auto model=make_lp({-3,-2},{{"x",0,infinity},{"y",0,infinity}},
+        {{"capacity",-infinity,4},{"copy",-infinity,4},{"resource",-infinity,5}},
+        {{0,0,1},{0,1,1},{1,0,1},{1,1,1},{2,0,2},{2,1,1}});
+    SolverOptions options;options.presolve=true;const auto result=solve_lp(model,options);INFO(result.message);
+    REQUIRE(result.status==SolveStatus::optimal);REQUIRE(result.objective==Approx(-9));
+    REQUIRE(result.verification.passed);REQUIRE(verify_optimality(model,result.primal,result.objective,result.certificate).passed);
+}
 TEST_CASE("Bland pricing terminates the classical cycling example", "[lp][regression]") {
     const auto model=make_lp({10,-57,-9,-24},{{"a"},{"b"},{"c"},{"d"}},{{"r1",-infinity,0},{"r2",-infinity,0},{"r3",-infinity,1}},
         {{0,0,.5},{0,1,-5.5},{0,2,-2.5},{0,3,9},{1,0,.5},{1,1,-1.5},{1,2,-.5},{1,3,1},{2,0,1}},ObjectiveSense::maximize);

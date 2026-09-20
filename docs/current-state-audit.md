@@ -1,8 +1,7 @@
 # Current-state audit
 
-Audit date: 2026-09-14. Baseline commit: `778fd77`. The audit is based on
-source inspection and an untouched Release test run: 93/93 CTest cases, 7/7
-Python tests, 2/2 web tests, and a clean TypeScript build.
+Audit updated: 2026-09-18. The current evidence baseline is maintained by the
+Release CTest, Python, and web verification commands documented in the README.
 
 Status meanings: **implemented** means executable behavior and tests exist;
 **partial** means useful behavior exists but does not meet the full requirement;
@@ -13,21 +12,21 @@ code exists but this host cannot validate it.
 |---|---|---|---|---|
 | C++ solver | C++20 core library and CLI executable | `CMakeLists.txt`, `src/` | Implemented | Industrial scale is not established |
 | Sparse matrix | Canonical immutable CSC, products and transpose products | `include/sovereign/sparse_matrix.hpp`, `src/sparse_matrix.cpp` | Implemented | No parallel SpMV in authoritative solver |
-| Model representation | Two-sided rows, bounds, objective sense, integer domains | `include/sovereign/model.hpp` | Implemented | No quadratic objective structure |
+| Model representation | Two-sided rows, bounds, linear/quadratic objectives and integer domains | `include/sovereign/model.hpp`, `include/sovereign/qp.hpp` | Implemented | MIQP is not implemented |
 | MPS/QPS parser | Strict free/fixed reader with resource limits and triangular `QUADOBJ` support | `src/mps.cpp` | Implemented | Other vendor quadratic sections are unsupported |
-| LP | Two-phase primal revised simplex with Harris ratio selection, refinement and original-space verification | `src/lp.cpp`, `src/lp_standard.cpp` | Partial | Dual simplex and sparse update schemes are absent |
+| LP | Two-phase revised simplex, Harris ratio selection, refinement, product-form sparse basis updates and original-space verification | `src/lp.cpp`, `src/lp_standard.cpp`, `src/basis.cpp` | Partial | Standalone dual-simplex selection and stronger factor update schemes are absent |
 | MILP | Deterministic best-bound branch-and-bound over verified LP relaxations | `src/mip.cpp` | Partial | Single-threaded; limited cuts and primal heuristic |
 | QP | Convex quadratic model, QPS `QUADOBJ` import and infeasible-start primal-dual predictor-corrector method | `include/sovereign/qp.hpp`, `src/qp.cpp` | Implemented for small convex QPs | Canonicalization and PSD/KKT paths are sparse, but elimination ordering and fill control remain limited |
-| Presolve | Fixed substitution, constant rows, singleton tightening, reconstruction | `src/presolve.cpp` | Partial | Duplicate rows, general implied bounds, aggregation and richer postsolve are absent |
+| Presolve | Fixed substitution, constant rows, singleton tightening, exact duplicate rows and reconstruction | `src/presolve.cpp` | Partial | Differently bounded parallel rows, aggregation and richer postsolve are absent |
 | Scaling | Row/column scaling in LP standard-form conversion | `src/lp_standard.cpp` | Partial | No iterative equilibration report or condition metrics |
 | Numerical tolerances | Explicit primal, dual, integrality and pivot tolerances | `include/sovereign/solution.hpp` | Implemented | No method-specific stability policy |
 | Certificates | Original-coordinate dual/Farkas/ray structures | `include/sovereign/solution.hpp`, `src/lp.cpp` | Partial | SC50A dual reconstruction currently fails strict postsolve verification |
 | Independent verifier | Primal, dual optimality, infeasibility and recession checks | `src/verification.cpp` | Implemented | Binary64 numerical verification, not exact proof; MILP global bound is solver-owned |
 | Branch-and-bound | LP relaxation at every node with verified pruning | `src/mip.cpp` | Implemented | No restart or tree persistence |
-| Branching | Most-fractional and learned pseudo-cost | `src/mip.cpp` | Implemented | No strong branching |
+| Branching | Most-fractional, learned pseudo-cost and bounded strong branching with real LP probes | `src/mip.cpp` | Implemented | Reliability on difficult MIPLIB remains incomplete |
 | Node selection | Deterministic best-bound queue with ID tie-break | `src/mip.cpp` | Implemented | No selectable depth/hybrid policy |
-| Cuts | Safe integer-row bound strengthening | `src/cuts.cpp` | Partial | No Gomory, MIR, cover or clique separators |
-| Heuristics | Rounding followed by fixed-integer LP repair | `src/mip.cpp` | Partial | No diving, feasibility pump or local search |
+| Cuts | Integer-row strengthening, row CG, conservative tableau GMI, binary cover and conflict-clique separation | `src/cuts.cpp`, `src/mip.cpp` | Partial | Multi-round cut pools, aging and broader MIR aggregation are absent |
+| Heuristics | Rounding, fixed-integer LP repair and deterministic budgeted L1 feasibility pump | `src/mip.cpp` | Partial | No diving or local search |
 | MIP gap | Normalized bound/incumbent gap and termination | `src/mip.cpp` | Implemented | Depends on single-threaded tree processing |
 | Parallelism | CPU capability reports hardware concurrency | `src/backend.cpp` | Missing | Authoritative LP/MILP algorithms are single-threaded |
 | CPU backend | CSC products and experimental primal-dual workload | `src/backend.cpp` | Implemented | First-order result is deliberately non-authoritative |
@@ -35,11 +34,11 @@ code exists but this host cannot validate it.
 | Adaptive execution | Measurement-based CPU/CUDA selection for experimental workload | `src/benchmark.cpp` | Partial | Does not select authoritative simplex/MILP execution strategies |
 | Model fingerprint | Stable endian-independent hash and structural metrics | `src/fingerprint.cpp` | Implemented | Existing hash is 64-bit, not cryptographic |
 | Strategy engine | Backend selection based on measured compute and transfer cost | `src/benchmark.cpp` | Partial | No LP algorithm selector |
-| Telemetry | Structured LP/MILP callbacks and backend timings | `include/sovereign/solution.hpp`, `src/lp.cpp`, `src/mip.cpp` | Implemented | No persistent solve timeline or factorization/refinement events |
-| CLI | Inspect, validate, solve and benchmark commands | `src/cli.cpp` | Implemented | Record/replay commands are absent |
-| Python API | Native pybind11 interface | `python/bindings.cpp` | Implemented | No recorder API |
-| REST API | FastAPI models, asynchronous solves, telemetry, verification and benchmarks | `service/app.py`, `service/store.py` | Implemented | No bundle download/replay endpoints |
-| Dashboard | React engineering console using actual API data | `web/src/` | Implemented | No persistent timeline, bundle integrity or replay view |
+| Telemetry | Structured LP/MILP/backend events plus persistent recorder timeline | `include/sovereign/solution.hpp`, `src/recorder.cpp` | Implemented | Cross-process distributed tracing is absent |
+| CLI | Inspect, validate, solve, QPS, record and replay commands | `src/cli.cpp` | Implemented | Benchmark orchestration remains script-based |
+| Python API | Native pybind11 solve and verification interface | `python/bindings.cpp` | Implemented | QP bindings remain narrower than the C++ API |
+| REST API | FastAPI asynchronous solves, telemetry, verification, benchmarks and recorder operations | `service/app.py`, `service/store.py` | Implemented | Distributed durable job storage is absent |
+| Dashboard | React engineering console with telemetry, verification and Flight Recorder views | `web/src/` | Implemented | Production authentication is deployment-specific |
 | Mistral integration | Server-side optional explanations and confirmation-gated formulations | `service/ai.py`, `service/app.py` | Implemented | Live call is currently rate/quota limited; AI remains optional |
 | Netlib | Automated AFIRO, SC50A and SC50B manifest and verified regressions | `benchmarks/manifests/netlib-small.json`, `tests/test_lp.cpp` | Implemented | Broader coverage remains useful |
 | MIPLIB | Checksum-pinned flugpl manifest and measured failed run | `benchmarks/manifests/miplib-small.json` | Partial | Solver reaches iteration limit |

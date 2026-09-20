@@ -1,5 +1,6 @@
 #include <catch2/catch_test_macros.hpp>
 #include <sovereign/presolve.hpp>
+#include <algorithm>
 #include <cmath>
 #include <stdexcept>
 using namespace sovereign;
@@ -56,4 +57,11 @@ TEST_CASE("Presolve propagates integer singleton fixes through multiple rows", "
     auto p=presolve(m); REQUIRE_FALSE(p.infeasible);
     REQUIRE(p.restore(std::vector<double>{})==std::vector<double>{2,3});
     REQUIRE(p.reduced.objective_offset==13); REQUIRE(p.reduced.constraints.empty());
+}
+TEST_CASE("Presolve removes exact duplicate rows but preserves near and differently bounded rows", "[presolve][duplicates]") {
+    Model m;m.variables={{"x",0,10},{"y",0,10}};m.objective={1,1};
+    m.constraints={{"original",-infinity,5},{"duplicate",-infinity,5},{"different_bound",-infinity,6},{"near",-infinity,5}};
+    m.matrix=CscMatrix::from_triplets(4,2,{{0,0,1},{0,1,2},{1,0,1},{1,1,2},{2,0,1},{2,1,2},{3,0,1},{3,1,2+1e-12}});
+    const auto p=presolve(m);REQUIRE_FALSE(p.infeasible);REQUIRE(p.reduced.constraints.size()==3);REQUIRE(p.original_rows==std::vector<Index>{0,2,3});REQUIRE(p.reduced.matrix.nonzeros()==6);
+    REQUIRE(std::any_of(p.journal.begin(),p.journal.end(),[](const auto& entry){return entry.find("Remove exact duplicate row: duplicate")!=std::string::npos;}));
 }
