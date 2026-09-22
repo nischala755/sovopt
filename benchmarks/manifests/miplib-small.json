@@ -10,6 +10,15 @@
       "mps_format": "fixed",
       "published_objective": 1201500.0,
       "objective_tolerance": 0.000001
+    },
+    {
+      "name": "p0033",
+      "url": "https://miplib2010.zib.de/miplib3/miplib3/p0033.mps.gz",
+      "sha256": "d606d733c9c7165d4e6ed621b20870e2b0dbce3c3dfd42f0f8e5b35d418f6a5e",
+      "compression": "gzip",
+      "mps_format": "fixed",
+      "published_objective": 3089.0,
+      "objective_tolerance": 0.000001
     }
   ]
 }

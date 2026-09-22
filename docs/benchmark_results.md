@@ -170,3 +170,24 @@ terminal claim; BEACONFD produced a candidate objective 33592.4858072 after
 378 pivots but failed dual-bound certification; LOTFI produced a candidate
 objective -25.264706061880016 after 1,054 pivots but failed strict dual
 stationarity verification. None is counted as solved.
+
+## MIPLIB p0033 incumbent and strong-branching guard — 2026-09-22
+
+The checksum-pinned MIPLIB manifest now includes `p0033`. AstraNiti found an
+independently verified integer incumbent with objective 3089, matching the
+published MIPLIB 3 value and isolated HiGHS 1.15.1. It did not prove
+optimality: after 100,000 LP iterations and 1,102 nodes, the best bound was
+3011. The result remains `iteration_limit`. HiGHS proved objective 3089 in one
+node.
+
+The model also exposed a strong-branching bug: a probe whose branch bounds were
+already contradictory was passed to LP validation and raised an exception.
+Such probes are now recorded as infeasible directly. The offline regression
+uses the official model and requires a controlled status plus independent
+integer-feasibility verification for any incumbent.
+
+Raw records are in `benchmarks/results/miplib-2026-09-22-expanded.json` and
+`benchmarks/results/reference-highs-miplib-2026-09-22-expanded.json`.
+`flugpl` still produced no incumbent: 100,000 LP iterations, 1,827 nodes and
+best bound 1185384.9999999998. This establishes MIPLIB solution-quality
+evidence for `p0033`, but not consistent MIPLIB optimality performance.

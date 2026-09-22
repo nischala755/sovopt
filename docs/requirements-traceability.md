@@ -31,7 +31,7 @@ Evidence date: 2026-09-20. Status reflects executable behavior, not class names.
 | Industrial | Transportation | PARTIALLY IMPLEMENTED | Logistics overlaps; no named validation |
 | Industrial | Supply chain | IMPLEMENTED | Seeded capacitated plant/customer network generator and solve regression |
 | Benchmark | Netlib | PARTIALLY IMPLEMENTED | AFIRO, SC50A, SC50B, SC105, ADLITTLE, ISRAEL and SC205 match published optima and verify; BLEND remains unsolved |
-| Benchmark | MIPLIB | PARTIALLY IMPLEMENTED | flugpl manifest/run exists and currently fails |
+| Benchmark | MIPLIB | PARTIALLY IMPLEMENTED | p0033 reaches a verified optimal-value incumbent without proving the bound; flugpl has no incumbent |
 | Benchmark | Mittelmann | NOT IMPLEMENTED | No manifest or measured run |
 | Benchmark | Reference comparison | IMPLEMENTED | Isolated HiGHS 1.15.1 process measured AFIRO, SC50A, SC50B and flugpl; raw evidence is checked in and no production target links the reference |
 | Sovereignty | From-scratch core | IMPLEMENTED | No external optimization engine in core |

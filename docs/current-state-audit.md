@@ -41,7 +41,7 @@ code exists but this host cannot validate it.
 | Dashboard | React engineering console with telemetry, verification and Flight Recorder views | `web/src/` | Implemented | Production authentication is deployment-specific |
 | Mistral integration | Server-side optional explanations and confirmation-gated formulations | `service/ai.py`, `service/app.py` | Implemented | Live call is currently rate/quota limited; AI remains optional |
 | Netlib | Automated seven-instance manifest with verified results | `benchmarks/manifests/netlib-small.json`, `benchmarks/results/netlib-2026-09-20-seven.json` | Partial | BLEND fails strict dual-certificate verification; larger BANDM times out |
-| MIPLIB | Checksum-pinned flugpl manifest and measured failed run | `benchmarks/manifests/miplib-small.json` | Partial | Solver reaches iteration limit |
+| MIPLIB | Checksum-pinned flugpl and p0033 runs | `benchmarks/manifests/miplib-small.json`, `benchmarks/results/miplib-2026-09-22-expanded.json` | Partial | p0033 has a verified optimal-value incumbent without a proof; flugpl has no incumbent |
 | Reference solver harness | Isolated exact-command adapter | `benchmarks/baselines/run_reference.py` | Partial | No reference executable installed on this host |
 | Result serialization | CLI JSON plus first-order benchmark JSON/CSV | `src/cli.cpp`, `src/benchmark.cpp` | Partial | No versioned complete solve artifact |
 | Industrial models | Seeded refinery, crude blending, process, production, power, logistics and supply-chain generators | `src/generators.cpp` | Implemented as demonstrators | Industrial data sets and industrial-scale performance validation remain absent |

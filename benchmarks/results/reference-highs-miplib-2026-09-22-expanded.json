@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "platform": "Windows-11-10.0.26200-SP0",
+  "trust_boundary": "Optional reference process; never imported or linked by AstraNiti production targets",
+  "records": [
+    {
+      "label": "REFERENCE",
+      "solver": "HiGHS",
+      "version": "1.15.1",
+      "available": true,
+      "executed": true,
+      "model": "build\\netlib\\flugpl.mps",
+      "read_status": "HighsStatus.kOk",
+      "run_status": "HighsStatus.kOk",
+      "model_status": "Optimal",
+      "objective": 1201500.0,
+      "wall_seconds": 0.13753920000090147,
+      "simplex_iterations": 858,
+      "mip_nodes": 89,
+      "mip_gap": 0.0
+    },
+    {
+      "label": "REFERENCE",
+      "solver": "HiGHS",
+      "version": "1.15.1",
+      "available": true,
+      "executed": true,
+      "model": "build\\netlib\\p0033.mps",
+      "read_status": "HighsStatus.kOk",
+      "run_status": "HighsStatus.kOk",
+      "model_status": "Optimal",
+      "objective": 3088.999999999999,
+      "wall_seconds": 0.051347299999179086,
+      "simplex_iterations": 72,
+      "mip_nodes": 1,
+      "mip_gap": 0.0
+    }
+  ]
+}

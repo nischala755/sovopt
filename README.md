@@ -44,7 +44,7 @@ flowchart LR
 | CLI and application API | Native CLI, pybind11 and asynchronous FastAPI jobs | Implemented |
 | Engineering dashboard | Model inspection, telemetry, verification and experiment views | Implemented |
 | Recognised benchmarks | Seven Netlib LPs, including ADLITTLE, ISRAEL and SC205, match published optima and pass independent verification | Demonstrated |
-| Broad Netlib/MIPLIB coverage | MIPLIB flugpl currently reaches the iteration limit | In progress |
+| Broad Netlib/MIPLIB coverage | p0033 finds a verified objective-3089 incumbent but does not prove optimality; flugpl has no incumbent | In progress |
 | Established-solver performance comparison | Isolated HiGHS 1.15.1 comparison for seven Netlib LPs and MIPLIB flugpl; speed competitiveness is not established | Demonstrated |
 | Optimization Flight Recorder | Real solve timeline, certificate, SHA-256 integrity, replay and independent re-verification | Implemented |
 | Challenging large-scale robustness | Current sparse refactorization architecture is not yet an industrial-scale performance result | In progress |

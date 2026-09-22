@@ -3,6 +3,7 @@
 #include <sovereign/mip.hpp>
 #include <sovereign/verification.hpp>
 #include <sovereign/cuts.hpp>
+#include <sovereign/mps.hpp>
 #include <iostream>
 #include <random>
 using namespace sovereign;
@@ -30,6 +31,14 @@ TEST_CASE("Strong branching performs real LP probes and preserves the verified o
  auto m=example({9,8,7},{{"a",0,1,VariableType::binary},{"b",0,1,VariableType::binary},{"c",0,1,VariableType::binary}},{{"capacity",-infinity,3}},{{0,0,2},{0,1,2},{0,2,2}});
  SolverOptions o;o.branching="strong";o.cuts=false;std::vector<std::string>events;o.telemetry=[&](const auto&e){events.push_back(e.type);};const auto r=run(m,o);
  REQUIRE(r.status==SolveStatus::optimal);REQUIRE(r.objective==Catch::Approx(9));REQUIRE(r.verification.passed);REQUIRE(std::find(events.begin(),events.end(),"STRONG_BRANCH_PROBE")!=events.end());
+}
+TEST_CASE("Strong branching handles contradictory P0033 probe bounds", "[mip][branching][miplib]") {
+    MpsOptions mps; mps.format=MpsFormat::fixed;
+    const auto model=read_mps_file(std::string(SOVEREIGN_SOURCE_DIR)+"/tests/data/p0033.mps",mps);
+    SolverOptions options; options.branching="strong"; options.iteration_limit=30000;
+    const auto result=run(model,options);
+    REQUIRE((result.status==SolveStatus::optimal || result.status==SolveStatus::iteration_limit));
+    if(!result.primal.empty()) REQUIRE(verify_primal(model,result.primal,result.objective,options.tolerances,true).passed);
 }
 TEST_CASE("MILP fractional equality is integer infeasible", "[mip]") {
     const auto m=example({1},{{"x",0,1,VariableType::integer}},{{"equality",1,1}},{{0,0,2}});

@@ -272,6 +272,9 @@ SolveResult solve_mip(const Model& original,const SolverOptions& options) {
                 const Index j=fractional[candidate].second;const double value=relaxation.primal[j];double gains[2]={0,0};bool valid=true;
                 for(Index direction=0;direction<2;++direction) {
                     Model probe=node.model;auto&v=probe.variables[j];if(direction)v.lower=std::max(v.lower,std::ceil(value));else v.upper=std::min(v.upper,std::floor(value));
+                    if(v.lower>v.upper || (v.type!=VariableType::continuous&&std::ceil(v.lower)>std::floor(v.upper))){
+                        gains[direction]=1e12;emit("STRONG_BRANCH_PROBE",std::to_string(j)+(direction?" up":" down")+" proved empty by bounds");continue;
+                    }
                     const auto tested=lp(probe,&solved_basis,nullptr);if(tested.status==SolveStatus::infeasible&&tested.verification.passed)gains[direction]=1e12;
                     else if(tested.status==SolveStatus::optimal&&tested.verification.passed)gains[direction]=std::max(0.0,sign*tested.verification.dual_bound-current);
                     else {valid=false;break;}
