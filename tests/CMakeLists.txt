@@ -6,6 +6,7 @@ target_link_libraries(sovereign_tests PRIVATE sovereign_app Catch2::Catch2WithMa
 target_compile_definitions(sovereign_tests PRIVATE SOVEREIGN_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
 include(Catch)
 catch_discover_tests(sovereign_tests)
+add_test(NAME industrial_demo COMMAND sovereign_industrial_demo 1)
 add_test(NAME cli_integration COMMAND "${CMAKE_COMMAND}"
   "-DCLI=$<TARGET_FILE:sovereign>" "-DSOURCE=${PROJECT_SOURCE_DIR}"
   -P "${CMAKE_CURRENT_SOURCE_DIR}/cli_integration.cmake")

@@ -30,6 +30,7 @@ Evidence date: 2026-09-20. Status reflects executable behavior, not class names.
 | Industrial | Power dispatch | IMPLEMENTED | Seeded mathematical model generator |
 | Industrial | Transportation | PARTIALLY IMPLEMENTED | Logistics overlaps; no named validation |
 | Industrial | Supply chain | IMPLEMENTED | Seeded capacitated plant/customer network generator and solve regression |
+| Industrial | Reproducible demonstration | IMPLEMENTED | One executable emits verified JSON for seven domains; scale 5 verifies 1,980 aggregate variables and scale 10 records its logistics timeout honestly |
 | Benchmark | Netlib | PARTIALLY IMPLEMENTED | AFIRO, SC50A, SC50B, SC105, ADLITTLE, ISRAEL and SC205 match published optima and verify; BLEND remains unsolved |
 | Benchmark | MIPLIB | PARTIALLY IMPLEMENTED | p0033 reaches a verified optimal-value incumbent without proving the bound; flugpl has no incumbent |
 | Benchmark | Mittelmann | NOT IMPLEMENTED | No manifest or measured run |

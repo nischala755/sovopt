@@ -4,7 +4,7 @@
 > A from-scratch optimization laboratory built for transparent, sovereign computation.
 
 [![C++20](https://img.shields.io/badge/C%2B%2B-20-00599C)](https://isocpp.org/)
-[![Tests](https://img.shields.io/badge/native%20tests-131%20passing-2ea44f)](#verification)
+[![Tests](https://img.shields.io/badge/native%20tests-138%20passing-2ea44f)](#verification)
 [![Python](https://img.shields.io/badge/Python%20tests-13%20passing-2ea44f)](#verification)
 [![Solver](https://img.shields.io/badge/external%20solver-none-ffb84d)](#trust-boundary)
 [![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https%3A%2F%2Fgithub.com%2Fnischala755%2Fsovopt)
@@ -52,6 +52,25 @@ flowchart LR
 
 The status table is intentionally evidence-based. See
 [benchmark evidence](docs/benchmark_results.md) before making performance claims.
+
+## Reproducible industrial demonstrator
+
+`sovereign_industrial_demo` generates deterministic mathematical models for
+refinery operations, power dispatch, logistics, crude blending, production
+planning, supply chains and process optimization, solves them with the native
+engine, and emits one machine-readable JSON document. Every reported success
+requires original-model verification.
+
+```powershell
+build/completion/sovereign_industrial_demo.exe 1
+build/completion/sovereign_industrial_demo.exe 5 > industrial-evidence.json
+```
+
+The scale-5 run covers 1,980 variables, 303 rows and 3,919 nonzeros across
+seven models and verified every result on the recorded machine. These models
+are deterministic synthetic demonstrators. They show end-to-end domain
+coverage and thousand-variable operation; they do not establish performance
+on confidential industrial data or million-variable models.
 
 The continuous LP interior-point path is available explicitly:
 

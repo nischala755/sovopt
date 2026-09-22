@@ -191,3 +191,20 @@ Raw records are in `benchmarks/results/miplib-2026-09-22-expanded.json` and
 `flugpl` still produced no incumbent: 100,000 LP iterations, 1,827 nodes and
 best bound 1185384.9999999998. This establishes MIPLIB solution-quality
 evidence for `p0033`, but not consistent MIPLIB optimality performance.
+
+## Synthetic industrial demonstrator — 2026-09-22
+
+The standalone `sovereign_industrial_demo` executable runs refinery, power,
+logistics, crude-blending, production-planning, supply-chain and process models
+through the native solver and independently checks every optimum. The scale-5
+run verified all seven models: 1,980 variables, 303 rows and 3,919 nonzeros in
+aggregate. The largest individual cases were an 870-variable logistics LP and
+an 800-variable supply-chain LP. Raw evidence is stored in
+`benchmarks/results/industrial-demo-scale5-2026-09-22.json`.
+
+A scale-10 boundary probe contained 7,360 aggregate variables. Six cases
+verified, including the 3,200-variable supply-chain LP; the 3,540-variable
+logistics LP reached its 30-second time limit. That raw result is retained in
+`benchmarks/results/industrial-demo-scale10-2026-09-22.json`. Both files label
+their evidence class `synthetic_industrial_demonstrator`; neither is presented
+as customer-data validation or million-variable evidence.
