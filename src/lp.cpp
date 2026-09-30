@@ -135,7 +135,8 @@ SimplexState dual_simplex(detail::StandardForm&f,std::span<const double>cost,Run
   if(leaving==f.basis.size()){std::vector<double>primal(f.matrix.columns());for(Index i=0;i<xb.size();++i)primal[f.basis[i]]=std::max(0.0,xb[i]);double obj=0;for(Index j=0;j<cost.size();++j)obj=std::fma(cost[j],primal[j],obj);run.emit("DUAL_SIMPLEX_COMPLETED");return {SolveStatus::optimal,std::move(primal),std::move(dual),{},obj};}
   std::vector<double>unit(f.basis.size());unit[leaving]=1;const auto row=basis.solve_transpose(unit);Index entering=f.matrix.columns();double best=infinity;
   for(Index j=0;j<f.matrix.columns();++j)if(!basic[j]&&!f.artificial[j]){const double a=dot_column(f.matrix,j,row);if(a<-tol.pivot){const double ratio=reduced[j]/(-a);if(ratio<best-tol.dual||(std::abs(ratio-best)<=tol.dual&&j<entering)){best=ratio;entering=j;}}}
-  if(entering==f.matrix.columns())throw NumericalError("dual simplex detected primal infeasibility; cold Phase I required");const auto old=f.basis[leaving];const auto prior=basis.refactorizations();basis.replace(leaving,entering);f.basis[leaving]=entering;++run.iterations;if(basis.refactorizations()!=prior)run.emit("REFACTORIZATION","dual-simplex product-form update limit or numerical pivot guard");run.emit("DUAL_SIMPLEX_ITERATION",std::to_string(old)+" -> "+std::to_string(entering));
+  if(entering==f.matrix.columns())throw NumericalError("dual simplex detected primal infeasibility; cold Phase I required");
+  const auto old=f.basis[leaving];const auto prior=basis.refactorizations();basis.replace(leaving,entering);f.basis[leaving]=entering;++run.iterations;if(basis.refactorizations()!=prior)run.emit("REFACTORIZATION","dual-simplex product-form update limit or numerical pivot guard");run.emit("DUAL_SIMPLEX_ITERATION",std::to_string(old)+" -> "+std::to_string(entering));
  }
 }
 void remove_artificials(detail::StandardForm& f,Run& run) {

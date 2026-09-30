@@ -122,7 +122,9 @@ CutStatistics apply_safe_root_cuts(Model&m,std::span<const double> lp_point){
   std::sort(terms.begin(),terms.end(),[](const auto&a,const auto&b){return a.first!=b.first?a.first>b.first:a.second<b.second;});double sum=0;Index cover_size=0;while(cover_size<terms.size()&&sum<=row.upper){sum+=terms[cover_size].first;++cover_size;}const auto cover_name="cover_"+std::to_string(i);if(sum>row.upper&&cover_size>=2&&!names.contains(cover_name)){const Index r=m.constraints.size();m.constraints.push_back({cover_name,-infinity,static_cast<double>(cover_size-1)});names.insert(cover_name);for(Index k=0;k<cover_size;++k)entries.push_back({r,terms[k].second,1});++stats.cover;}
   for(Index a=0;a<terms.size();++a)for(Index b=a+1;b<terms.size();++b)if(terms[a].first+terms[b].first>row.upper){const auto name="clique_"+std::to_string(i)+"_"+std::to_string(a)+"_"+std::to_string(b);if(names.contains(name))continue;const Index r=m.constraints.size();m.constraints.push_back({name,-infinity,1});names.insert(name);entries.push_back({r,terms[a].second,1});entries.push_back({r,terms[b].second,1});++stats.clique;}
  }
- if(m.constraints.size()!=original_rows)m.matrix=CscMatrix::from_triplets(m.constraints.size(),m.variables.size(),std::move(entries));return stats;
+ if(m.constraints.size()!=original_rows)
+     m.matrix=CscMatrix::from_triplets(m.constraints.size(),m.variables.size(),std::move(entries));
+ return stats;
 }
 
 Index apply_tableau_gmi_cuts(Model& m,const LpTableau& tableau,
@@ -139,9 +141,12 @@ Index apply_tableau_gmi_cuts(Model& m,const LpTableau& tableau,
    else gamma=a>=0?a/f0:-a/(1-f0);
    if(!std::isfinite(gamma)||gamma<0){safe=false;break;}if(gamma<=1e-14)continue;const auto&column=tableau.columns[j];if(!column.representable){safe=false;break;}constant+=static_cast<long double>(gamma)*column.expression_constant;for(const auto&[original,value]:column.original_expression)coefficients[original]+=static_cast<long double>(gamma)*value;
   }
-  if(!safe)continue;const long double lower=1-constant;long double activity=0;for(Index j=0;j<coefficients.size();++j)activity+=coefficients[j]*lp_point[j];if(!(lower-activity>efficacy_tolerance*(1+std::abs(lower))))continue;
+  if(!safe)continue;
+  const long double lower=1-constant;long double activity=0;for(Index j=0;j<coefficients.size();++j)activity+=coefficients[j]*lp_point[j];if(!(lower-activity>efficacy_tolerance*(1+std::abs(lower))))continue;
   const auto name="gmi_"+std::to_string(row_index);if(names.contains(name))continue;const Index new_row=m.constraints.size();m.constraints.push_back({name,static_cast<double>(lower),infinity});names.insert(name);for(Index j=0;j<coefficients.size();++j)if(coefficients[j]!=0)entries.push_back({new_row,j,static_cast<double>(coefficients[j])});++added;
  }
- if(added)m.matrix=CscMatrix::from_triplets(m.constraints.size(),m.variables.size(),std::move(entries));return added;
+ if(added)
+     m.matrix=CscMatrix::from_triplets(m.constraints.size(),m.variables.size(),std::move(entries));
+ return added;
 }
 }

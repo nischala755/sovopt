@@ -203,7 +203,8 @@ void Reader::data(std::vector<std::string> t) {
         const auto first=column_indices_.find(t[0]),second=column_indices_.find(t[1]);
         if(first==column_indices_.end())fail("unknown quadratic variable: "+t[0]);
         if(second==column_indices_.end())fail("unknown quadratic variable: "+t[1]);
-        if(entry_count_>=options_.max_entries)fail("coefficient entry limit exceeded");++entry_count_;
+        if(entry_count_>=options_.max_entries)fail("coefficient entry limit exceeded");
+        ++entry_count_;
         const auto lo=std::min(first->second,second->second),hi=std::max(first->second,second->second);
         const auto key=std::to_string(lo)+":"+std::to_string(hi);if(!quadratic_pairs_.insert(key).second)fail("duplicate quadratic variable pair");
         const auto value=number(t[2]);quadratic_entries_.push_back({first->second,second->second,value});

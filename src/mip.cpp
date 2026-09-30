@@ -179,7 +179,7 @@ SolveResult solve_mip(const Model& original,const SolverOptions& options) {
     for(auto& v:root.variables) if(v.type==VariableType::binary) { v.lower=std::max(0.0,v.lower); v.upper=std::min(1.0,v.upper); }
     CutStatistics cut_stats;
     if(options.cuts) { cut_stats=apply_safe_root_cuts(root);r.cuts_added=cut_stats.integer_rounding+cut_stats.chvatal_gomory+cut_stats.cover+cut_stats.clique; }
-    open.push({std::move(root)}); r.nodes_generated=1; emit("MIP_STARTED"); emit("NODE_CREATED","0");
+    Node root_node; root_node.model=std::move(root); open.push(std::move(root_node)); r.nodes_generated=1; emit("MIP_STARTED"); emit("NODE_CREATED","0");
     if(r.cuts_added) emit("CUT_GENERATED","rounding="+std::to_string(cut_stats.integer_rounding)+" cg="+std::to_string(cut_stats.chvatal_gomory)+" cover="+std::to_string(cut_stats.cover)+" clique="+std::to_string(cut_stats.clique));
     const Index n=original.variables.size(); std::vector<double> upsum(n),downsum(n); std::vector<Index> upcount(n),downcount(n);
     while(!open.empty()) {
@@ -290,7 +290,7 @@ SolveResult solve_mip(const Model& original,const SolverOptions& options) {
         }
         const double value=relaxation.primal[branch], f=value-std::floor(value);
         for(bool up:{false,true}) {
-            Node child{node.model,current,r.nodes_generated++,branch,current,up?1-f:f,up};
+            Node child{node.model,current,r.nodes_generated++,branch,current,up?1-f:f,up,{}};
             child.warm=solved_basis;
             auto& v=child.model.variables[branch]; if(up) v.lower=std::max(v.lower,std::ceil(value)); else v.upper=std::min(v.upper,std::floor(value));
             open.push(std::move(child)); emit("NODE_CREATED",std::to_string(r.nodes_generated-1));
