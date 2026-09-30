@@ -7,7 +7,8 @@ export type AiProposalData={summary:string;formulation:string;warnings:string[];
 export type FlightEvent={type:string;detail?:string;elapsed_seconds?:number;iterations?:number;nodes?:number}
 export type ReplayResult={integrity_passed:boolean;reverification_passed:boolean;recorded_status:string;message?:string;tampered_artifact?:string;timeline:FlightEvent[]}
 
-const base=(import.meta.env.VITE_API_BASE_URL||'/api').replace(/\/$/,'')
+export const resolveApiBase=(configured:string|undefined,development:boolean)=>(configured||(development?'/api':'')).replace(/\/$/,'')
+const base=resolveApiBase(import.meta.env.VITE_API_BASE_URL,import.meta.env.DEV)
 async function request<T>(path:string,init?:RequestInit):Promise<T>{
  const response=await fetch(`${base}${path}`,{...init,headers:{...(init?.body instanceof FormData?{}:{'Content-Type':'application/json'}),...init?.headers}})
  if(!response.ok){let detail=`Request failed (${response.status})`;try{const body=await response.json() as {detail?:string};if(body.detail)detail=body.detail}catch{}throw new Error(detail)}
