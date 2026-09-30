@@ -7,7 +7,7 @@ import pytest
 
 from fastapi.testclient import TestClient
 
-from service.ai import AIUnavailable, FormulationProposal, MistralProvider
+from service.ai import AIUnavailable, FormulationProposal, MistralProvider, OllamaQwenProvider, create_ai_provider
 from service.app import Settings, create_app
 
 
@@ -178,3 +178,44 @@ def test_apparent_secret_is_rejected_before_mistral_network_access():
     provider = MistralProvider(api_key="configured-but-unused")
     with pytest.raises(AIUnavailable, match="not sent"):
         provider.propose("password=super-secret formulate a model")
+
+
+def test_qwen_provider_uses_local_ollama_and_returns_content(monkeypatch):
+    class Response:
+        def raise_for_status(self): pass
+        def json(self): return {"message": {"content": "Local Qwen explanation"}}
+    seen = {}
+    def post(url, **kwargs):
+        seen.update(url=url, **kwargs)
+        return Response()
+    monkeypatch.setattr("service.ai.httpx.post", post)
+    provider = OllamaQwenProvider(model="qwen3.5:2b")
+    assert provider.explain({"model": {"variables": 2}}) == "Local Qwen explanation"
+    assert seen["url"] == "http://127.0.0.1:11434/api/chat"
+    assert seen["json"]["model"] == "qwen3.5:2b"
+    assert seen["json"]["stream"] is False
+    assert seen["json"]["think"] is False
+    assert seen["json"]["options"]["num_predict"] == 512
+
+
+def test_ai_factory_selects_qwen_without_a_cloud_key(monkeypatch):
+    monkeypatch.setenv("SOVEREIGN_AI_PROVIDER", "qwen")
+    monkeypatch.delenv("MISTRAL_API_KEY", raising=False)
+    assert isinstance(create_ai_provider(), OllamaQwenProvider)
+
+
+def test_nonfinite_native_telemetry_is_json_safe(tmp_path):
+    class InfiniteTelemetry(FakeEngine):
+        def solve(self, path, kind, options, emit):
+            emit({"type": "LP_STARTED", "objective": float("inf"),
+                  "best_bound": float("-inf"), "mip_gap": float("inf")})
+            return super().solve(path, kind, options, emit)
+    for c in client(tmp_path, engine=InfiniteTelemetry()):
+        mid = upload(c)
+        job = wait_job(c, c.post(f"/models/{mid}/solve", json={"kind": "lp"}).json()["job_id"])
+        response = c.get(f"/jobs/{job['id']}/telemetry")
+        assert response.status_code == 200
+        event = response.json()["events"][0]
+        assert event["objective"] is None
+        assert event["best_bound"] is None
+        assert event["mip_gap"] is None

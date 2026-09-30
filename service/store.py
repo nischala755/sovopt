@@ -1,10 +1,18 @@
 from __future__ import annotations
 
 import json
+import math
 import sqlite3
 import threading
 import uuid
 from pathlib import Path
+
+
+def _json_safe(value):
+    if isinstance(value, float) and not math.isfinite(value): return None
+    if isinstance(value, dict): return {key: _json_safe(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)): return [_json_safe(item) for item in value]
+    return value
 
 
 class Store:
@@ -36,14 +44,14 @@ class Store:
         with self._lock,self._connect() as db: db.execute("INSERT INTO jobs VALUES(?,?,?,NULL,NULL)",(ident,kind,"queued"))
         return ident
     def set_job(self, ident: str, state: str, result=None, error=None):
-        with self._lock,self._connect() as db: db.execute("UPDATE jobs SET state=?,result=?,error=? WHERE id=?",(state,json.dumps(result) if result is not None else None,error,ident))
+        with self._lock,self._connect() as db: db.execute("UPDATE jobs SET state=?,result=?,error=? WHERE id=?",(state,json.dumps(_json_safe(result), allow_nan=False) if result is not None else None,error,ident))
     def job(self, ident: str):
         with self._connect() as db: row=db.execute("SELECT id,kind,state,result,error FROM jobs WHERE id=?",(ident,)).fetchone()
         return None if row is None else {"id":row[0],"kind":row[1],"state":row[2],"result":json.loads(row[3]) if row[3] else None,"error":row[4]}
     def telemetry(self, ident: str, event: dict, limit: int):
         with self._lock,self._connect() as db:
             count=db.execute("SELECT COUNT(*) FROM telemetry WHERE job_id=?",(ident,)).fetchone()[0]
-            if count < limit: db.execute("INSERT INTO telemetry VALUES(?,?,?)",(ident,count,json.dumps(event)))
+            if count < limit: db.execute("INSERT INTO telemetry VALUES(?,?,?)",(ident,count,json.dumps(_json_safe(event), allow_nan=False)))
     def events(self, ident: str):
         with self._connect() as db: rows=db.execute("SELECT event FROM telemetry WHERE job_id=? ORDER BY seq",(ident,)).fetchall()
         return [json.loads(r[0]) for r in rows]

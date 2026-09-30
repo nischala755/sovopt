@@ -17,7 +17,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, ConfigDict, Field
 
-from .ai import AIProvider, AIUnavailable, MistralProvider, sanitized_explanation_payload
+from .ai import AIProvider, AIUnavailable, create_ai_provider, sanitized_explanation_payload
 from .engine import Engine, NativeEngine
 from .store import Store
 
@@ -62,7 +62,7 @@ def create_app(settings: Settings | None = None, *, engine: Engine | None = None
     uploads = cfg.data_dir / "uploads"; uploads.mkdir(exist_ok=True)
     recordings = cfg.data_dir / "recordings"; recordings.mkdir(exist_ok=True)
     store, backend = Store(cfg.data_dir / "metadata.sqlite3"), engine or NativeEngine()
-    ai = ai_provider or MistralProvider()
+    ai = ai_provider or create_ai_provider()
     pool = ThreadPoolExecutor(max_workers=cfg.max_active_jobs, thread_name_prefix="sovereign-job")
     slots, proposals = BoundedSemaphore(cfg.max_active_jobs), {}
     @asynccontextmanager
@@ -94,7 +94,8 @@ def create_app(settings: Settings | None = None, *, engine: Engine | None = None
         capabilities = backend.capabilities() if backend.available else {"gpu_available":False,"gpu_detail":backend.unavailable_reason}
         return {"status":"ok","engine":"available" if backend.available else "unavailable","reason":backend.unavailable_reason,
                 "gpu":"available" if capabilities.get("gpu_available") else "unavailable",
-                "gpu_detail":capabilities.get("gpu_detail"),"ai":"available" if os.getenv("MISTRAL_API_KEY") else "unavailable"}
+                "gpu_detail":capabilities.get("gpu_detail"),"ai":"available" if getattr(ai,"configured",True) else "unavailable",
+                "ai_provider":ai.__class__.__name__}
 
     @app.get("/models")
     def models():

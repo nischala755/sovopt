@@ -51,12 +51,50 @@ class AIProvider(Protocol):
     def propose(self, prompt: str) -> FormulationProposal: ...
 
 
+class OllamaQwenProvider:
+    configured = True
+
+    def __init__(self, model: str | None = None, base_url: str | None = None):
+        self._model = model or os.getenv("SOVEREIGN_QWEN_MODEL", "qwen3.5:2b")
+        self._base_url = (base_url or os.getenv("OLLAMA_BASE_URL", "http://127.0.0.1:11434")).rstrip("/")
+
+    def _chat(self, messages: list[dict], *, json_mode: bool = False) -> str:
+        body = {"model": self._model, "messages": messages, "stream": False, "think": False,
+                "options": {"temperature": 0, "num_predict": 512}}
+        if json_mode:
+            body["format"] = "json"
+        try:
+            response = httpx.post(f"{self._base_url}/api/chat", json=body, timeout=60)
+            response.raise_for_status()
+            return response.json()["message"]["content"]
+        except (httpx.HTTPError, KeyError, TypeError, ValueError) as exc:
+            raise AIUnavailable("Local Qwen assistant unavailable") from exc
+
+    def explain(self, payload: dict) -> str:
+        return self._chat([{"role": "system", "content": "Explain this optimization metadata concisely. Never solve the model or claim independent verification."},
+                           {"role": "user", "content": json.dumps(payload, separators=(",", ":"))}])
+
+    def propose(self, prompt: str) -> FormulationProposal:
+        reject_apparent_secrets(prompt)
+        schema = '{"name":"...","sense":"minimize|maximize","variables":[{"name":"x","lower":0,"upper":1,"type":"continuous|integer|binary"}],"constraints":[{"name":"c","lower":0,"upper":1,"coefficients":{"x":1}}],"objective":{"x":1},"objective_offset":0}'
+        content = self._chat([{"role": "system", "content": f"Return only JSON matching this linear formulation schema: {schema}. Never return executable code."},
+                              {"role": "user", "content": prompt[:4000]}], json_mode=True)
+        try:
+            return FormulationProposal.model_validate_json(content)
+        except ValueError as exc:
+            raise AIUnavailable("Local Qwen returned an invalid formulation") from exc
+
+
 class MistralProvider:
     def __init__(self, api_key: str | None = None, model: str = "mistral-small-latest",
                  base_url: str = "https://api.mistral.ai/v1"):
         self._key = api_key or os.getenv("MISTRAL_API_KEY")
         self._model = model
         self._base_url = base_url.rstrip("/")
+
+    @property
+    def configured(self) -> bool:
+        return bool(self._key)
 
     def _chat(self, messages: list[dict], *, json_mode: bool = False) -> str:
         if not self._key:
@@ -84,6 +122,15 @@ class MistralProvider:
             return FormulationProposal.model_validate_json(content)
         except ValueError as exc:
             raise AIUnavailable("Mistral returned an invalid formulation") from exc
+
+
+def create_ai_provider() -> AIProvider:
+    provider = os.getenv("SOVEREIGN_AI_PROVIDER", "mistral").strip().lower()
+    if provider == "qwen":
+        return OllamaQwenProvider()
+    if provider == "mistral":
+        return MistralProvider()
+    raise ValueError(f"unsupported AI provider: {provider}")
 
 
 def sanitized_explanation_payload(data: dict) -> dict:
